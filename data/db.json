@@ -1,0 +1,70 @@
+{
+  "users": [
+    {
+      "uid": "admin-1",
+      "email": "admin@system.com",
+      "name": "System Admin",
+      "role": "admin",
+      "passwordHash": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
+      "createdAt": "2026-07-20T17:06:57.970Z"
+    },
+    {
+      "uid": "doctor-1",
+      "email": "doctor@system.com",
+      "name": "Dr. Jane Smith",
+      "role": "doctor",
+      "passwordHash": "f348d5628621f3d8f59c8cabda0f8eb0aa7e0514a90be7571020b1336f26c113",
+      "createdAt": "2026-07-20T17:06:57.970Z"
+    }
+  ],
+  "scans": [
+    {
+      "id": "scan-1",
+      "patientName": "John Doe",
+      "patientAge": 45,
+      "patientGender": "Male",
+      "doctorId": "doctor-1",
+      "doctorName": "Dr. Jane Smith",
+      "imageUrl": "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=60",
+      "prediction": "Abnormal",
+      "confidence": 87.5,
+      "probabilities": {
+        "Normal": 12.5,
+        "Abnormal": 87.5
+      },
+      "timestamp": "2026-07-17T17:06:57.970Z"
+    },
+    {
+      "id": "scan-2",
+      "patientName": "Alice Johnson",
+      "patientAge": 32,
+      "patientGender": "Female",
+      "doctorId": "doctor-1",
+      "doctorName": "Dr. Jane Smith",
+      "imageUrl": "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=60",
+      "prediction": "Normal",
+      "confidence": 94.2,
+      "probabilities": {
+        "Normal": 94.2,
+        "Abnormal": 5.8
+      },
+      "timestamp": "2026-07-19T17:06:57.970Z"
+    },
+    {
+      "id": "scan-3",
+      "patientName": "Robert Lee",
+      "patientAge": 61,
+      "patientGender": "Male",
+      "doctorId": "doctor-1",
+      "doctorName": "Dr. Jane Smith",
+      "imageUrl": "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=60",
+      "prediction": "Abnormal",
+      "confidence": 76.1,
+      "probabilities": {
+        "Normal": 23.9,
+        "Abnormal": 76.1
+      },
+      "timestamp": "2026-07-20T17:06:57.970Z"
+    }
+  ]
+}

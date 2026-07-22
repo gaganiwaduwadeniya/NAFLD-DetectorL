@@ -1,0 +1,46 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A system user, either a doctor or an administrator.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique user ID from authentication." },
+        "email": { "type": "string", "format": "email", "description": "The email address of the user." },
+        "name": { "type": "string", "description": "The full name of the user." },
+        "role": { "type": "string", "enum": ["doctor", "admin"], "description": "The system role of the user." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "The date and time the user profile was created." }
+      },
+      "required": ["uid", "email", "name", "role", "createdAt"]
+    },
+    "Scan": {
+      "title": "Scan",
+      "description": "An ultrasound scan record with prediction output and clinical metadata.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the scan." },
+        "patientName": { "type": "string", "description": "Name of the patient." },
+        "patientAge": { "type": "number", "description": "Age of the patient." },
+        "patientGender": { "type": "string", "enum": ["Male", "Female", "Other"], "description": "Gender of the patient." },
+        "doctorId": { "type": "string", "description": "The UID of the doctor who ran the scan." },
+        "doctorName": { "type": "string", "description": "The name of the doctor who ran the scan." },
+        "imageUrl": { "type": "string", "description": "URL of the uploaded scan image." },
+        "prediction": { "type": "string", "enum": ["Normal", "Abnormal"], "description": "The diagnostic prediction of the machine learning model." },
+        "confidence": { "type": "number", "description": "Confidence percentage of the prediction." },
+        "probabilities": { "type": "object", "description": "The raw probability scores for each class." },
+        "timestamp": { "type": "string", "format": "date-time", "description": "The date and time the scan was analyzed." }
+      },
+      "required": ["id", "patientName", "patientAge", "patientGender", "doctorId", "doctorName", "imageUrl", "prediction", "confidence", "probabilities", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection of system user profiles."
+    },
+    "/scans/{scanId}": {
+      "schema": "Scan",
+      "description": "Collection of patient scan and prediction history."
+    }
+  }
+}

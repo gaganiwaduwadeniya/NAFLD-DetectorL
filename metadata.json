@@ -1,0 +1,6 @@
+{
+  "name": "NAFLD Diagnostic System",
+  "description": "Non-Alcoholic Fatty Liver Disease detection system using liver ultrasound images.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
