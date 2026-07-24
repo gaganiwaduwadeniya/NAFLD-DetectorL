@@ -11,3 +11,4 @@ coverage/
 .env*
 !.env.example
 data/db.json
+firebase-applet-config.json
