@@ -1,0 +1,346 @@
+{
+  "schema_version": 3,
+  "notebook_version": "3.0.0",
+  "created_at_utc": "2026-07-22T19:38:43.575604+00:00",
+  "research_use_only": true,
+  "framework": {
+    "tensorflow": "2.20.0",
+    "scikit_learn": "1.6.1"
+  },
+  "input": {
+    "shape": [
+      224,
+      224,
+      3
+    ],
+    "dtype": "float32",
+    "pixel_value_range": [
+      0.0,
+      255.0
+    ],
+    "source_color": "grayscale",
+    "channel_conversion": "grayscale_to_rgb",
+    "resize": "bilinear_antialias",
+    "crop_fractions": {
+      "top": 0.0,
+      "bottom": 0.0,
+      "left": 0.0,
+      "right": 0.0
+    },
+    "external_rescaling": false,
+    "note": "EfficientNetB0 performs input rescaling inside every saved fold model."
+  },
+  "ensemble": {
+    "folds": 5,
+    "aggregation": "arithmetic_mean_of_fold_softmax_probabilities"
+  },
+  "binary": {
+    "models": [
+      {
+        "fold": 0,
+        "model_file": "binary_fold0_model_v3.keras",
+        "sha256": "1e64b7c7c1a9ff878058b9ac30ca56f40a5052eb2e63f9de9270701ab0978eb7"
+      },
+      {
+        "fold": 1,
+        "model_file": "binary_fold1_model_v3.keras",
+        "sha256": "fde050498ee6547179b4537106b1485edc684f8a93356e00214e238a2bdc7861"
+      },
+      {
+        "fold": 2,
+        "model_file": "binary_fold2_model_v3.keras",
+        "sha256": "3a21b11cf6edf576bcaca9c4f8b63f24f8aa5260260ef7b02e88e56cc73e051a"
+      },
+      {
+        "fold": 3,
+        "model_file": "binary_fold3_model_v3.keras",
+        "sha256": "93c201b11f5561f29790dfdd3ccdf392ed5e120511af06dfc9d476ed247d91c9"
+      },
+      {
+        "fold": 4,
+        "model_file": "binary_fold4_model_v3.keras",
+        "sha256": "db9a9b4c6dc939f78a2aa79ea9eabf960f8cf52c07b74b885fc8703ddad502a3"
+      }
+    ],
+    "class_names": [
+      "Non-NAFLD",
+      "NAFLD"
+    ],
+    "positive_class_index": 1,
+    "positive_class": "NAFLD",
+    "thresholds": {
+      "frame": 0.5536812543869019,
+      "patient": 0.5039900541305542
+    },
+    "single_frame_threshold": 0.5536812543869019,
+    "threshold_method": "maximum specificity at sensitivity >= 0.90",
+    "oof_evidence": {
+      "threshold_method": "maximum specificity at sensitivity >= 0.90",
+      "thresholds": {
+        "frame": 0.5536812543869019,
+        "patient": 0.5039900541305542
+      },
+      "frame_metrics": {
+        "threshold": 0.5536812543869019,
+        "roc_auc": 0.8702321981424147,
+        "average_precision": 0.9415494627797298,
+        "brier_score": 0.13959441464913674,
+        "accuracy": 0.7963636363636364,
+        "balanced_accuracy": 0.7323529411764707,
+        "precision": 0.8221153846153846,
+        "sensitivity": 0.9,
+        "specificity": 0.5647058823529412,
+        "f1": 0.8592964824120602,
+        "confusion_matrix": [
+          [
+            96,
+            74
+          ],
+          [
+            38,
+            342
+          ]
+        ]
+      },
+      "patient_metrics": {
+        "threshold": 0.5039900541305542,
+        "roc_auc": 0.8823529411764707,
+        "average_precision": 0.9482332569039648,
+        "brier_score": 0.13489809327167,
+        "accuracy": 0.8181818181818182,
+        "balanced_accuracy": 0.7546439628482973,
+        "precision": 0.8333333333333334,
+        "sensitivity": 0.9210526315789473,
+        "specificity": 0.5882352941176471,
+        "f1": 0.875,
+        "confusion_matrix": [
+          [
+            10,
+            7
+          ],
+          [
+            3,
+            35
+          ]
+        ]
+      },
+      "patient_bootstrap_95_ci": {
+        "roc_auc": [
+          0.7817337461300309,
+          0.9643962848297213
+        ],
+        "balanced_accuracy": [
+          0.6238390092879257,
+          0.8823529411764706
+        ],
+        "sensitivity": [
+          0.8157894736842105,
+          1.0
+        ],
+        "specificity": [
+          0.35294117647058826,
+          0.8235294117647058
+        ]
+      },
+      "frame_figure": "/kaggle/working/nafld_v3/reports/binary_frame_oof_evidence.png",
+      "patient_figure": "/kaggle/working/nafld_v3/reports/binary_patient_oof_evidence.png",
+      "fold_patient_auc_mean": 0.8583333333333334,
+      "fold_patient_auc_std": 0.09675137034894694
+    }
+  },
+  "grading": {
+    "models": [
+      {
+        "fold": 0,
+        "model_file": "grading_fold0_model_v3.keras",
+        "sha256": "5d3af469bca17f1307aa55058c68277e1619e4faeb3f002d48a80cae4aaabc09"
+      },
+      {
+        "fold": 1,
+        "model_file": "grading_fold1_model_v3.keras",
+        "sha256": "b2949ee3ec802bf9012a9ed8ea8cb456fba8efe402667f2ebde6d0da319bb802"
+      },
+      {
+        "fold": 2,
+        "model_file": "grading_fold2_model_v3.keras",
+        "sha256": "cb723c8b6bff2880236eab33b5e0e843adcde0787ce4f2204205d90f136f621d"
+      },
+      {
+        "fold": 3,
+        "model_file": "grading_fold3_model_v3.keras",
+        "sha256": "c6466b6e93d21f7f3c75cc8f21760d50c340cedaf609c5dba36de8c3b88e3efa"
+      },
+      {
+        "fold": 4,
+        "model_file": "grading_fold4_model_v3.keras",
+        "sha256": "df8cd7f88e6b8a4e0f695091925205b449d2964da56aceaf3aa8e91d8e720c67"
+      }
+    ],
+    "class_names": [
+      "Grade1_Mild",
+      "Grade2_Moderate_Severe"
+    ],
+    "positive_class_index": 1,
+    "positive_class": "Grade2_Moderate_Severe",
+    "thresholds": {
+      "frame": 0.6078062057495117,
+      "patient": 0.5935616493225098
+    },
+    "single_frame_threshold": 0.6078062057495117,
+    "threshold_method": "maximum Youden J / balanced accuracy",
+    "grade_rule": "Mild when fat < 33%; moderate/severe otherwise.",
+    "oof_evidence": {
+      "threshold_method": "maximum Youden J / balanced accuracy",
+      "thresholds": {
+        "frame": 0.6078062057495117,
+        "patient": 0.5935616493225098
+      },
+      "frame_metrics": {
+        "threshold": 0.6078062057495117,
+        "roc_auc": 0.7327361111111111,
+        "average_precision": 0.7356654252740761,
+        "brier_score": 0.23778589647490192,
+        "accuracy": 0.6894736842105263,
+        "balanced_accuracy": 0.6880555555555555,
+        "precision": 0.6761363636363636,
+        "sensitivity": 0.6611111111111111,
+        "specificity": 0.715,
+        "f1": 0.6685393258426966,
+        "confusion_matrix": [
+          [
+            143,
+            57
+          ],
+          [
+            61,
+            119
+          ]
+        ]
+      },
+      "patient_metrics": {
+        "threshold": 0.5935616493225098,
+        "roc_auc": 0.7583333333333333,
+        "average_precision": 0.7860409173853207,
+        "brier_score": 0.23708806485107006,
+        "accuracy": 0.7105263157894737,
+        "balanced_accuracy": 0.7138888888888889,
+        "precision": 0.6666666666666666,
+        "sensitivity": 0.7777777777777778,
+        "specificity": 0.65,
+        "f1": 0.717948717948718,
+        "confusion_matrix": [
+          [
+            13,
+            7
+          ],
+          [
+            4,
+            14
+          ]
+        ]
+      },
+      "patient_bootstrap_95_ci": {
+        "roc_auc": [
+          0.6,
+          0.8972222222222223
+        ],
+        "balanced_accuracy": [
+          0.5638194444444444,
+          0.8612499999999993
+        ],
+        "sensitivity": [
+          0.5555555555555556,
+          0.9444444444444444
+        ],
+        "specificity": [
+          0.45,
+          0.85
+        ]
+      },
+      "frame_figure": "/kaggle/working/nafld_v3/reports/grading_frame_oof_evidence.png",
+      "patient_figure": "/kaggle/working/nafld_v3/reports/grading_patient_oof_evidence.png",
+      "fold_patient_auc_mean": 0.7666666666666666,
+      "fold_patient_auc_std": 0.14236957969391575
+    }
+  },
+  "cascade": {
+    "rule": "Run grading only when the binary ensemble score reaches the selected threshold.",
+    "oof_evidence": {
+      "frame_metrics": {
+        "accuracy": 0.5836363636363636,
+        "balanced_accuracy": 0.585272331154684,
+        "macro_f1": 0.5899361864677529,
+        "confusion_matrix": [
+          [
+            96,
+            55,
+            19
+          ],
+          [
+            37,
+            106,
+            57
+          ],
+          [
+            1,
+            60,
+            119
+          ]
+        ]
+      },
+      "patient_metrics": {
+        "accuracy": 0.6181818181818182,
+        "balanced_accuracy": 0.6220043572984749,
+        "macro_f1": 0.6208046695851573,
+        "confusion_matrix": [
+          [
+            10,
+            5,
+            2
+          ],
+          [
+            3,
+            10,
+            7
+          ],
+          [
+            0,
+            4,
+            14
+          ]
+        ]
+      }
+    }
+  },
+  "cross_validation": {
+    "type": "patient-level stratified K-fold",
+    "folds": 5,
+    "stratification": "Non-NAFLD / NAFLD mild / NAFLD moderate-severe",
+    "threshold_note": "Thresholded OOF metrics are development estimates because thresholds were selected from the complete OOF predictions. A new external cohort is required for final locked-threshold evaluation."
+  },
+  "dataset": {
+    "file_name": "dataset_liver_bmodes_steatosis_assessment_IJCARS.mat",
+    "sha256": "912dc5367e06ccf24d8ba33e503d7b755b92ba84a6840cb232c92096dbe936f7",
+    "patients": 55,
+    "frames": 550
+  },
+  "configuration": {
+    "image_size": 224,
+    "per_replica_batch_size": 8,
+    "seed": 42,
+    "n_splits": 5,
+    "phase1_epochs": 40,
+    "phase2_epochs": 25,
+    "phase1_learning_rate": 0.0001,
+    "phase2_learning_rate": 1e-05,
+    "fine_tune_layers": 20,
+    "early_stopping_patience": 10,
+    "grade_cutoff_percent": 33.0,
+    "binary_target_sensitivity": 0.9,
+    "bootstrap_iterations": 2000,
+    "crop_top_fraction": 0.0,
+    "crop_bottom_fraction": 0.0,
+    "crop_left_fraction": 0.0,
+    "crop_right_fraction": 0.0
+  }
+}

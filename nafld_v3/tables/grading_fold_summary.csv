@@ -1,0 +1,6 @@
+task,fold,training_patients,validation_patients,validation_frames,selected_source,selected_patient_auc,selected_frame_auc,selected_validation_loss,model_file
+grading,0,31,7,70,grading_fold0_phase2_best.keras,0.5833333333333333,0.5208333333333333,0.7745625376701355,grading_fold0_model_v3.keras
+grading,1,31,7,70,grading_fold1_phase2_best.keras,0.75,0.6966666666666668,0.7467727661132812,grading_fold1_model_v3.keras
+grading,2,30,8,80,grading_fold2_phase2_best.keras,0.875,0.811875,0.6333799958229065,grading_fold2_model_v3.keras
+grading,3,30,8,80,grading_fold3_phase2_best.keras,0.9375,0.905,0.6388221979141235,grading_fold3_model_v3.keras
+grading,4,30,8,80,grading_fold4_phase1_best.keras,0.6875,0.6834374999999999,0.6734744906425476,grading_fold4_model_v3.keras

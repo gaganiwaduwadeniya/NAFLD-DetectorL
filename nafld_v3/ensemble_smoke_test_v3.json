@@ -1,0 +1,11 @@
+{
+  "patient_index": 0,
+  "prediction": "Non-NAFLD",
+  "binary_probabilities": {
+    "Non-NAFLD": 0.7332460284233093,
+    "NAFLD": 0.2667539715766907
+  },
+  "binary_threshold": 0.5536812543869019,
+  "grade": null,
+  "grading_probabilities": null
+}

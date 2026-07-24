@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, X, FileImage, ShieldCheck } from 'lucide-react';
+import { Upload, X, FileImage, FlaskConical } from 'lucide-react';
 
 interface ImageUploaderProps {
   onImageSelected: (file: File | null) => void;
@@ -35,7 +35,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelected, s
 
   const validateAndSelectFile = (file: File) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/bmp'];
-    const maxSize = 50 * 1024 * 1024; // 50MB
+    const maxSize = 20 * 1024 * 1024; // 20 MB — matches server enforcement
 
     if (!allowedTypes.includes(file.type)) {
       alert('Unsupported file format. Please upload JPG, PNG, or BMP.');
@@ -43,7 +43,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelected, s
     }
 
     if (file.size > maxSize) {
-      alert('File exceeds the 50MB limit. Please upload a smaller image.');
+      alert('File exceeds the 20 MB limit. Please upload a smaller image.');
       return;
     }
 
@@ -108,15 +108,17 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelected, s
             <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mb-4 border border-blue-100/50 shadow-sm text-blue-500">
               <Upload className="h-6 w-6 stroke-[2.2]" />
             </div>
-            
-            <h3 className="text-slate-800 font-bold text-sm mb-1">New Ultrasound Analysis</h3>
+
+            <h3 className="text-slate-800 font-bold text-sm mb-1">Upload Ultrasound Image</h3>
             <p className="text-slate-500 text-xs max-w-xs mb-4 leading-relaxed">
-              Drag and drop your liver ultrasound image here or click to browse. (DICOM, JPG, PNG, or BMP supported up to 50MB).
+              Drag and drop your liver ultrasound image here or click to browse.
+              JPG, PNG, or BMP — up to 20 MB.
             </p>
 
-            <div className="flex items-center space-x-1.5 text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-100/60 px-2.5 py-1 rounded-full font-semibold">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-              <span>Medical-Grade Diagnostic Input</span>
+            {/* Research-only badge */}
+            <div className="flex items-center space-x-1.5 text-[10px] text-violet-700 bg-violet-50 border border-violet-100/60 px-2.5 py-1 rounded-full font-semibold">
+              <FlaskConical className="h-3.5 w-3.5 text-violet-500" />
+              <span>Research Use Only</span>
             </div>
           </div>
         </div>
@@ -128,7 +130,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelected, s
             className="w-full max-h-[350px] object-contain mx-auto"
             referrerPolicy="no-referrer"
           />
-          
+
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
             <div className="flex items-center space-x-2 text-white">
               <FileImage className="h-4 w-4 text-blue-400" />

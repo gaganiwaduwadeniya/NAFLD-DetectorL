@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Scan } from '../types';
-import { Search, Eye, Filter, ArrowUpDown, ChevronRight, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Search, Eye, ArrowUpDown, ChevronRight, CheckCircle, AlertTriangle } from 'lucide-react';
 
 interface ScanTableProps {
   scans: Scan[];
@@ -16,11 +16,28 @@ export const ScanTable: React.FC<ScanTableProps> = ({ scans, showPhysicianColumn
   const [sortBy, setSortBy] = useState<'date' | 'age' | 'confidence'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  // Filter and sort logic combined
+  // Derive a normalised prediction string for filtering regardless of schema version
+  const normalisedPrediction = (s: Scan): 'Normal' | 'Abnormal' => {
+    if (s.prediction === 'Normal') return 'Normal';
+    if (s.prediction === 'Abnormal') return 'Abnormal';
+    // V3 records: derive from binaryResult
+    if (s.binaryResult === 'Non-NAFLD') return 'Normal';
+    if (s.binaryResult === 'NAFLD') return 'Abnormal';
+    return 'Normal';
+  };
+
+  // Display label shown in the Diagnostic Output column
+  const displayLabel = (s: Scan): string => {
+    if (s.schemaVersion === 3 && s.finalLabel) return s.finalLabel;
+    return s.prediction ?? 'Unknown';
+  };
+
+  const isAbnormalScan = (s: Scan): boolean => normalisedPrediction(s) === 'Abnormal';
+
   const filteredAndSortedScans = useMemo(() => {
     let result = [...scans];
 
-    // Search Term Filter
+    // Search filter
     if (searchTerm.trim() !== '') {
       const lowerSearch = searchTerm.toLowerCase();
       result = result.filter(
@@ -31,17 +48,17 @@ export const ScanTable: React.FC<ScanTableProps> = ({ scans, showPhysicianColumn
       );
     }
 
-    // Prediction Filter
+    // Prediction filter (works for both V3 and legacy)
     if (predictionFilter !== 'All') {
-      result = result.filter((s) => s.prediction === predictionFilter);
+      result = result.filter((s) => normalisedPrediction(s) === predictionFilter);
     }
 
-    // Gender Filter
+    // Gender filter
     if (genderFilter !== 'All') {
       result = result.filter((s) => s.patientGender === genderFilter);
     }
 
-    // Sort Logic
+    // Sort
     result.sort((a, b) => {
       let comparison = 0;
       if (sortBy === 'date') {
@@ -49,9 +66,8 @@ export const ScanTable: React.FC<ScanTableProps> = ({ scans, showPhysicianColumn
       } else if (sortBy === 'age') {
         comparison = a.patientAge - b.patientAge;
       } else if (sortBy === 'confidence') {
-        comparison = a.confidence - b.confidence;
+        comparison = (a.confidence ?? 0) - (b.confidence ?? 0);
       }
-
       return sortOrder === 'desc' ? -comparison : comparison;
     });
 
@@ -82,6 +98,13 @@ export const ScanTable: React.FC<ScanTableProps> = ({ scans, showPhysicianColumn
     }
   };
 
+  // Confidence/prob display string: V3 shows "X% prob", legacy shows "X% conf"
+  const probDisplay = (s: Scan): string => {
+    if (s.confidence === undefined || s.confidence === null) return '';
+    const suffix = s.schemaVersion === 3 ? 'prob' : 'conf';
+    return `(${s.confidence.toFixed(1)}% ${suffix})`;
+  };
+
   return (
     <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden" id="scan-table-container">
       {/* Table Action Controls */}
@@ -110,9 +133,9 @@ export const ScanTable: React.FC<ScanTableProps> = ({ scans, showPhysicianColumn
               className="px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
               id="select-filter-prediction"
             >
-              <option value="All">All Diagnostic Outputs</option>
-              <option value="Normal">Normal Only</option>
-              <option value="Abnormal">Abnormal Only</option>
+              <option value="All">All Outputs</option>
+              <option value="Normal">Non-NAFLD / Normal</option>
+              <option value="Abnormal">NAFLD / Abnormal</option>
             </select>
           </div>
 
@@ -134,19 +157,19 @@ export const ScanTable: React.FC<ScanTableProps> = ({ scans, showPhysicianColumn
         </div>
       </div>
 
-      {/* Actual Data Table */}
+      {/* Data Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse" id="scans-data-table">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
-              <th className="py-3 px-5">Patient Dossier</th>
+              <th className="py-3 px-5">Patient</th>
               <th className="py-3 px-5 cursor-pointer hover:bg-slate-50" onClick={() => toggleSort('age')}>
                 <div className="flex items-center space-x-1">
                   <span>Demographics</span>
                   <ArrowUpDown className="h-3 w-3 text-slate-400" />
                 </div>
               </th>
-              {showPhysicianColumn && <th className="py-3 px-5">Consulting Doctor</th>}
+              {showPhysicianColumn && <th className="py-3 px-5">Clinician</th>}
               <th className="py-3 px-5 cursor-pointer hover:bg-slate-50" onClick={() => toggleSort('date')}>
                 <div className="flex items-center space-x-1">
                   <span>Scan Date</span>
@@ -175,18 +198,18 @@ export const ScanTable: React.FC<ScanTableProps> = ({ scans, showPhysicianColumn
                     <div className="font-sans font-semibold text-slate-800">{scan.patientName}</div>
                     <div className="font-mono text-[10px] text-slate-400 uppercase tracking-tight">ID: {scan.id}</div>
                   </td>
-                  
+
                   {/* Patient Age & Gender */}
                   <td className="py-3.5 px-5">
-                    <div className="text-slate-700">{scan.patientAge} Years Old</div>
+                    <div className="text-slate-700">{scan.patientAge} yrs</div>
                     <div className="text-slate-400 text-xs">{scan.patientGender}</div>
                   </td>
 
-                  {/* Consulting Doctor if admin mode */}
+                  {/* Consulting Doctor if admin */}
                   {showPhysicianColumn && (
                     <td className="py-3.5 px-5">
                       <div className="font-medium text-slate-700">{scan.doctorName}</div>
-                      <div className="text-[10px] text-slate-400 uppercase">Clinician ID: {scan.doctorId}</div>
+                      <div className="text-[10px] text-slate-400">ID: {scan.doctorId}</div>
                     </td>
                   )}
 
@@ -196,27 +219,29 @@ export const ScanTable: React.FC<ScanTableProps> = ({ scans, showPhysicianColumn
                     <div className="text-slate-400 text-xs">{formatDate(scan.timestamp).split(',')[1]}</div>
                   </td>
 
-                  {/* Prediction Label & Confidence Badge */}
+                  {/* Diagnostic Label & probability */}
                   <td className="py-3.5 px-5">
                     <div className="flex items-center space-x-2">
-                      {scan.prediction === 'Normal' ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100/40">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Normal
-                        </span>
-                      ) : (
+                      {isAbnormalScan(scan) ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-50 text-red-700 border border-red-100/40">
                           <AlertTriangle className="h-3 w-3 mr-1" />
-                          Abnormal
+                          {displayLabel(scan)}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100/40">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          {displayLabel(scan)}
                         </span>
                       )}
-                      <span className="text-xs font-semibold text-slate-500 font-mono">
-                        ({scan.confidence.toFixed(1)}% Conf)
-                      </span>
+                      {scan.confidence !== undefined && (
+                        <span className="text-xs font-semibold text-slate-500 font-mono">
+                          {probDisplay(scan)}
+                        </span>
+                      )}
                     </div>
                   </td>
 
-                  {/* Table Row Action Icon */}
+                  {/* Row Action */}
                   <td className="py-3.5 px-5 text-right">
                     <button
                       onClick={(e) => {
@@ -225,7 +250,7 @@ export const ScanTable: React.FC<ScanTableProps> = ({ scans, showPhysicianColumn
                       }}
                       className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                     >
-                      <ChevronRight className="h-4.5 w-4.5" />
+                      <ChevronRight className="h-4 w-4" />
                     </button>
                   </td>
                 </tr>
@@ -234,8 +259,8 @@ export const ScanTable: React.FC<ScanTableProps> = ({ scans, showPhysicianColumn
               <tr>
                 <td colSpan={showPhysicianColumn ? 6 : 5} className="py-12 text-center text-slate-400 font-sans">
                   <div className="max-w-xs mx-auto space-y-2">
-                    <p className="text-sm font-semibold text-slate-600">No Patient Scans Found</p>
-                    <p className="text-xs text-slate-400">Try modifying search tags or prediction classification filters.</p>
+                    <p className="text-sm font-semibold text-slate-600">No Scans Found</p>
+                    <p className="text-xs text-slate-400">Try adjusting search or filter criteria.</p>
                   </div>
                 </td>
               </tr>
@@ -243,11 +268,11 @@ export const ScanTable: React.FC<ScanTableProps> = ({ scans, showPhysicianColumn
           </tbody>
         </table>
       </div>
-      
-      {/* Table Footer Stats */}
+
+      {/* Table Footer */}
       <div className="p-4 bg-slate-50/50 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500">
-        <span>Showing {filteredAndSortedScans.length} of {scans.length} total patient records</span>
-        <span className="font-mono">NAFLD-DB V1.0</span>
+        <span>Showing {filteredAndSortedScans.length} of {scans.length} total records</span>
+        <span className="font-mono">NAFLD-Detector V3</span>
       </div>
     </div>
   );

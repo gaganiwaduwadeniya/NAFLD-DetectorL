@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "created_at_utc": "2026-07-24T13:12:48.073078+00:00",
+  "research_use_only": true,
+  "evaluation": "V3 binary fold ensemble on labeled external single frames",
+  "data_dir": "G:\\NAFLD-DetectorL\\Test_Data",
+  "bundle_dir": "G:\\NAFLD-DetectorL\\nafld_v3",
+  "model_version": "3.0.0",
+  "contract_sha256": "b3cae3967199f27570889d8392d4ce31d3ce4977471aab34277b48993c3abd6f",
+  "binary_threshold": 0.5536812543869019,
+  "folds": 5,
+  "model_load_seconds": 17.294,
+  "inference_seconds": 145.895,
+  "failed_images": [],
+  "metrics": {
+    "evaluated_images": 87,
+    "class_counts": {
+      "Non-NAFLD": 11,
+      "NAFLD": 76
+    },
+    "confusion_matrix": {
+      "order": [
+        "Non-NAFLD",
+        "NAFLD"
+      ],
+      "tn": 2,
+      "fp": 9,
+      "fn": 12,
+      "tp": 64,
+      "matrix": [
+        [
+          2,
+          9
+        ],
+        [
+          12,
+          64
+        ]
+      ]
+    },
+    "accuracy": 0.758621,
+    "balanced_accuracy": 0.511962,
+    "sensitivity_nafld_recall": 0.842105,
+    "specificity_normal_recall": 0.181818,
+    "precision_nafld": 0.876712,
+    "negative_predictive_value": 0.142857,
+    "f1_nafld": 0.85906,
+    "roc_auc": 0.601675,
+    "mean_prob_nafld_by_true_class": {
+      "Non-NAFLD": 0.649129,
+      "NAFLD": 0.686257
+    }
+  }
+}

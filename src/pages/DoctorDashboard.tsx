@@ -3,11 +3,15 @@ import { useAuth } from '../context/AuthContext';
 import { ImageUploader } from '../components/ImageUploader';
 import { ResultCard } from '../components/ResultCard';
 import { Scan } from '../types';
-import { Upload, User, Clipboard, Calendar, FileText, Activity, ShieldAlert, CheckCircle2, RefreshCw } from 'lucide-react';
+import {
+  Upload, User, Clipboard, Calendar, FileText,
+  Activity, ShieldAlert, CheckCircle2, RefreshCw,
+  WifiOff
+} from 'lucide-react';
 
 export const DoctorDashboard: React.FC = () => {
   const { getAuthHeaders } = useAuth();
-  
+
   // Patient demographics state
   const [patientName, setPatientName] = useState('');
   const [patientAge, setPatientAge] = useState('');
@@ -17,11 +21,13 @@ export const DoctorDashboard: React.FC = () => {
   // Status & output state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isModelUnavailable, setIsModelUnavailable] = useState(false);
   const [scanResult, setScanResult] = useState<Scan | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setIsModelUnavailable(false);
 
     if (!selectedFile) {
       setError('Please upload an ultrasound image before continuing.');
@@ -39,9 +45,8 @@ export const DoctorDashboard: React.FC = () => {
     }
 
     setLoading(true);
-    
+
     try {
-      // Build standard multipart request
       const formData = new FormData();
       formData.append('image', selectedFile);
       formData.append('patientName', patientName.trim());
@@ -51,16 +56,19 @@ export const DoctorDashboard: React.FC = () => {
       const headers = getAuthHeaders();
       const res = await fetch('/api/predict', {
         method: 'POST',
-        headers: {
-          ...headers
-        },
-        body: formData
+        headers: { ...headers },
+        body: formData,
       });
 
       const data = await res.json();
-      
+
       if (!res.ok) {
-        throw new Error(data.error || 'Diagnostic model prediction failed.');
+        // 503 means the ML service is down — surface a specific banner
+        if (res.status === 503) {
+          setIsModelUnavailable(true);
+          return;
+        }
+        throw new Error(data.error || 'Prediction request failed.');
       }
 
       setScanResult(data);
@@ -78,16 +86,18 @@ export const DoctorDashboard: React.FC = () => {
     setSelectedFile(null);
     setScanResult(null);
     setError(null);
+    setIsModelUnavailable(false);
   };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="doctor-dashboard">
       <div className="space-y-2 mb-8">
         <h1 className="font-sans font-extrabold text-slate-900 tracking-tight text-3xl">
-          Liver Ultrasound Diagnostics
+          Liver Ultrasound Analysis
         </h1>
         <p className="text-sm text-slate-500">
-          Upload DICOM or ultrasound scan frames and input demographics to run AI fatty liver detection.
+          Upload a liver ultrasound image and enter patient demographics to run the NAFLD detection model.
+          For research use only — results are not for clinical diagnosis.
         </p>
       </div>
 
@@ -97,15 +107,30 @@ export const DoctorDashboard: React.FC = () => {
           <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6" id="diagnostic-form">
             <h2 className="text-base font-bold text-slate-800 flex items-center space-x-2">
               <Clipboard className="h-5 w-5 text-blue-600" />
-              <span>Patient Clinical Details</span>
+              <span>Patient Details</span>
             </h2>
 
-            {/* Error alerts */}
+            {/* Model unavailable banner */}
+            {isModelUnavailable && (
+              <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-start space-x-3 text-amber-800 text-xs" id="model-unavailable-banner">
+                <WifiOff className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold block mb-0.5">Inference Service Unavailable</span>
+                  <span>
+                    The ML model service is not reachable. Ensure the Flask service is running and
+                    <code className="mx-1 px-1 bg-amber-100 rounded font-mono">ML_SERVICE_URL</code>
+                    is set correctly, then try again.
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Validation error alert */}
             {error && (
-              <div className="bg-red-50 border border-red-100/50 p-4 rounded-xl flex items-start space-x-3 text-red-800 text-xs">
+              <div className="bg-red-50 border border-red-100/50 p-4 rounded-xl flex items-start space-x-3 text-red-800 text-xs" id="form-error-banner">
                 <ShieldAlert className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-bold block">Validation Fault</span>
+                  <span className="font-bold block">Error</span>
                   <span>{error}</span>
                 </div>
               </div>
@@ -119,7 +144,7 @@ export const DoctorDashboard: React.FC = () => {
                   Patient Full Name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4.5 w-4.5" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
                   <input
                     type="text"
                     required
@@ -136,10 +161,10 @@ export const DoctorDashboard: React.FC = () => {
               {/* Patient Age */}
               <div className="sm:col-span-3 space-y-1.5">
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-                  Patient Age
+                  Age
                 </label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4.5 w-4.5" />
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
                   <input
                     type="number"
                     required
@@ -158,7 +183,7 @@ export const DoctorDashboard: React.FC = () => {
               {/* Patient Gender */}
               <div className="sm:col-span-3 space-y-1.5">
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-                  Assigned Sex
+                  Sex
                 </label>
                 <select
                   value={patientGender}
@@ -174,16 +199,16 @@ export const DoctorDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Ultrasound Frame Upload */}
+            {/* Ultrasound Upload */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-                Ultrasound Image Frame
+                Ultrasound Image
               </label>
               {scanResult ? (
                 <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-950 max-h-[350px]">
                   <img
                     src={scanResult.imageUrl}
-                    alt="Analyzed ultrasound scan"
+                    alt="Analysed ultrasound scan"
                     className="w-full max-h-[350px] object-contain mx-auto"
                     referrerPolicy="no-referrer"
                   />
@@ -193,7 +218,7 @@ export const DoctorDashboard: React.FC = () => {
               )}
             </div>
 
-            {/* Trigger buttons */}
+            {/* Action buttons */}
             <div className="flex space-x-3 pt-2">
               {scanResult ? (
                 <button
@@ -203,7 +228,7 @@ export const DoctorDashboard: React.FC = () => {
                   id="btn-reset-diagnostic"
                 >
                   <RefreshCw className="h-4 w-4" />
-                  <span>Diagnose New Patient</span>
+                  <span>New Analysis</span>
                 </button>
               ) : (
                 <button
@@ -215,12 +240,12 @@ export const DoctorDashboard: React.FC = () => {
                   {loading ? (
                     <>
                       <Activity className="h-4 w-4 animate-spin text-white" />
-                      <span>Running Neural Network Models...</span>
+                      <span>Running model…</span>
                     </>
                   ) : (
                     <>
                       <Activity className="h-4 w-4" />
-                      <span>Execute AI Diagnosis</span>
+                      <span>Run NAFLD Detection</span>
                     </>
                   )}
                 </button>
@@ -229,30 +254,33 @@ export const DoctorDashboard: React.FC = () => {
           </form>
         </div>
 
-        {/* Right Column: Dynamic Diagnosis Output Details */}
+        {/* Right Column: Result Output */}
         <div className="lg:col-span-5">
           {scanResult ? (
             <div className="space-y-4 animate-fade-in" id="diagnosis-result-display">
               <ResultCard scan={scanResult} />
-              
-              {/* Mini feedback success badge */}
+
+              {/* Success badge */}
               <div className="flex items-center space-x-2.5 bg-emerald-50 border border-emerald-100/50 text-emerald-800 p-3.5 rounded-xl text-xs">
                 <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
                 <div>
-                  <span className="font-bold block">Patient Record Saved</span>
-                  <span>Ultrasound scan metadata has been successfully indexed in clinical databases.</span>
+                  <span className="font-bold block">Scan Record Saved</span>
+                  <span>Result has been saved to the database.</span>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-10 text-center h-full min-h-[400px] flex flex-col justify-center items-center space-y-4" id="empty-result-placeholder">
+            <div
+              className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-10 text-center h-full min-h-[400px] flex flex-col justify-center items-center space-y-4"
+              id="empty-result-placeholder"
+            >
               <div className="p-4 bg-white border border-slate-200 text-slate-400 rounded-2xl shadow-sm">
                 <FileText className="h-8 w-8" />
               </div>
               <div className="max-w-xs">
-                <h3 className="font-sans font-bold text-slate-700 text-sm">Diagnostic Output Panel</h3>
+                <h3 className="font-sans font-bold text-slate-700 text-sm">Output Panel</h3>
                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  Provide patient demographic metadata and upload a valid liver ultrasound scan to run prediction engines.
+                  Upload a liver ultrasound image and fill in patient details to run the detection model.
                 </p>
               </div>
             </div>

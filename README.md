@@ -1,5 +1,10 @@
 # NAFLD Diagnostic Support System
 
+> Current architecture, model history, metrics, integration phases, completed
+> work, and the exact next task are documented in
+> [`PROJECT_MASTER_REPORT.md`](./PROJECT_MASTER_REPORT.md). Future developers and
+> agents should read that file first.
+
 A complete clinical-grade full-stack web application designed for Non-Alcoholic Fatty Liver Disease (NAFLD) classification and tracking from liver ultrasound scans.
 
 ## 🛠️ Tech Stack & Architecture

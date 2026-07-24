@@ -11,7 +11,38 @@ export interface ScanProbabilities {
   Abnormal: number;
 }
 
-export interface Scan {
+export interface V3InferenceMetadata {
+  schemaVersion: 3;
+  modelVersion: string;
+  contractSha256: string;
+  inputMode: 'single_frame';
+  researchUseOnly: boolean;
+
+  // Cascade outputs
+  binaryResult: 'Non-NAFLD' | 'NAFLD';
+  binaryProbNafld: number;
+  binaryProbNonNafld: number;
+  binaryThreshold: number;
+  binaryFoldProbs: number[];
+  binaryFoldStd: number;
+
+  gradingPerformed: boolean;
+  gradingResult?: 'Grade1_Mild' | 'Grade2_Moderate_Severe';
+  gradingProbModerateSevere?: number;
+  gradingProbMild?: number;
+  gradingThreshold?: number;
+  gradingFoldProbs?: number[];
+  gradingFoldStd?: number;
+
+  finalLabel: 'Non-NAFLD' | 'NAFLD-Grade1_Mild' | 'NAFLD-Grade2_Moderate_Severe';
+
+  // Execution & Image metadata
+  imageWidth?: number;
+  imageHeight?: number;
+  inferenceLatencyMs?: number;
+}
+
+export interface Scan extends Partial<V3InferenceMetadata> {
   id: string;
   patientName: string;
   patientAge: number;
@@ -19,6 +50,8 @@ export interface Scan {
   doctorId: string;
   doctorName: string;
   imageUrl: string;
+
+  // Legacy compatibility fields
   prediction: 'Normal' | 'Abnormal';
   confidence: number;
   probabilities: ScanProbabilities;

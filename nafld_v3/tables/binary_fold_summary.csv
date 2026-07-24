@@ -1,0 +1,6 @@
+task,fold,training_patients,validation_patients,validation_frames,selected_source,selected_patient_auc,selected_frame_auc,selected_validation_loss,model_file
+binary,0,44,11,110,binary_fold0_phase2_best.keras,0.8928571428571428,0.8882142857142857,0.4192977249622345,binary_fold0_model_v3.keras
+binary,1,44,11,110,binary_fold1_phase2_best.keras,0.8571428571428572,0.825,0.5170853137969971,binary_fold1_model_v3.keras
+binary,2,44,11,110,binary_fold2_phase2_best.keras,0.75,0.7525,0.48863810300827026,binary_fold2_model_v3.keras
+binary,3,44,11,110,binary_fold3_phase2_best.keras,0.7916666666666667,0.79,0.5129128098487854,binary_fold3_model_v3.keras
+binary,4,44,11,110,binary_fold4_phase2_best.keras,1.0,0.9979166666666667,0.281563937664032,binary_fold4_model_v3.keras

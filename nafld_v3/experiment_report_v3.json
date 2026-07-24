@@ -1,0 +1,194 @@
+{
+  "binary": {
+    "threshold_method": "maximum specificity at sensitivity >= 0.90",
+    "thresholds": {
+      "frame": 0.5536812543869019,
+      "patient": 0.5039900541305542
+    },
+    "frame_metrics": {
+      "threshold": 0.5536812543869019,
+      "roc_auc": 0.8702321981424147,
+      "average_precision": 0.9415494627797298,
+      "brier_score": 0.13959441464913674,
+      "accuracy": 0.7963636363636364,
+      "balanced_accuracy": 0.7323529411764707,
+      "precision": 0.8221153846153846,
+      "sensitivity": 0.9,
+      "specificity": 0.5647058823529412,
+      "f1": 0.8592964824120602,
+      "confusion_matrix": [
+        [
+          96,
+          74
+        ],
+        [
+          38,
+          342
+        ]
+      ]
+    },
+    "patient_metrics": {
+      "threshold": 0.5039900541305542,
+      "roc_auc": 0.8823529411764707,
+      "average_precision": 0.9482332569039648,
+      "brier_score": 0.13489809327167,
+      "accuracy": 0.8181818181818182,
+      "balanced_accuracy": 0.7546439628482973,
+      "precision": 0.8333333333333334,
+      "sensitivity": 0.9210526315789473,
+      "specificity": 0.5882352941176471,
+      "f1": 0.875,
+      "confusion_matrix": [
+        [
+          10,
+          7
+        ],
+        [
+          3,
+          35
+        ]
+      ]
+    },
+    "patient_bootstrap_95_ci": {
+      "roc_auc": [
+        0.7817337461300309,
+        0.9643962848297213
+      ],
+      "balanced_accuracy": [
+        0.6238390092879257,
+        0.8823529411764706
+      ],
+      "sensitivity": [
+        0.8157894736842105,
+        1.0
+      ],
+      "specificity": [
+        0.35294117647058826,
+        0.8235294117647058
+      ]
+    },
+    "frame_figure": "/kaggle/working/nafld_v3/reports/binary_frame_oof_evidence.png",
+    "patient_figure": "/kaggle/working/nafld_v3/reports/binary_patient_oof_evidence.png",
+    "fold_patient_auc_mean": 0.8583333333333334,
+    "fold_patient_auc_std": 0.09675137034894694
+  },
+  "grading": {
+    "threshold_method": "maximum Youden J / balanced accuracy",
+    "thresholds": {
+      "frame": 0.6078062057495117,
+      "patient": 0.5935616493225098
+    },
+    "frame_metrics": {
+      "threshold": 0.6078062057495117,
+      "roc_auc": 0.7327361111111111,
+      "average_precision": 0.7356654252740761,
+      "brier_score": 0.23778589647490192,
+      "accuracy": 0.6894736842105263,
+      "balanced_accuracy": 0.6880555555555555,
+      "precision": 0.6761363636363636,
+      "sensitivity": 0.6611111111111111,
+      "specificity": 0.715,
+      "f1": 0.6685393258426966,
+      "confusion_matrix": [
+        [
+          143,
+          57
+        ],
+        [
+          61,
+          119
+        ]
+      ]
+    },
+    "patient_metrics": {
+      "threshold": 0.5935616493225098,
+      "roc_auc": 0.7583333333333333,
+      "average_precision": 0.7860409173853207,
+      "brier_score": 0.23708806485107006,
+      "accuracy": 0.7105263157894737,
+      "balanced_accuracy": 0.7138888888888889,
+      "precision": 0.6666666666666666,
+      "sensitivity": 0.7777777777777778,
+      "specificity": 0.65,
+      "f1": 0.717948717948718,
+      "confusion_matrix": [
+        [
+          13,
+          7
+        ],
+        [
+          4,
+          14
+        ]
+      ]
+    },
+    "patient_bootstrap_95_ci": {
+      "roc_auc": [
+        0.6,
+        0.8972222222222223
+      ],
+      "balanced_accuracy": [
+        0.5638194444444444,
+        0.8612499999999993
+      ],
+      "sensitivity": [
+        0.5555555555555556,
+        0.9444444444444444
+      ],
+      "specificity": [
+        0.45,
+        0.85
+      ]
+    },
+    "frame_figure": "/kaggle/working/nafld_v3/reports/grading_frame_oof_evidence.png",
+    "patient_figure": "/kaggle/working/nafld_v3/reports/grading_patient_oof_evidence.png",
+    "fold_patient_auc_mean": 0.7666666666666666,
+    "fold_patient_auc_std": 0.14236957969391575
+  },
+  "cascade": {
+    "frame_metrics": {
+      "accuracy": 0.5836363636363636,
+      "balanced_accuracy": 0.585272331154684,
+      "macro_f1": 0.5899361864677529,
+      "confusion_matrix": [
+        [
+          96,
+          55,
+          19
+        ],
+        [
+          37,
+          106,
+          57
+        ],
+        [
+          1,
+          60,
+          119
+        ]
+      ]
+    },
+    "patient_metrics": {
+      "accuracy": 0.6181818181818182,
+      "balanced_accuracy": 0.6220043572984749,
+      "macro_f1": 0.6208046695851573,
+      "confusion_matrix": [
+        [
+          10,
+          5,
+          2
+        ],
+        [
+          3,
+          10,
+          7
+        ],
+        [
+          0,
+          4,
+          14
+        ]
+      ]
+    }
+  }
+}
