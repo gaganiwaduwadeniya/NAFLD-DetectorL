@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nafld-pytorch-research-v1-single-frame-v1",
+  "title": "NAFLD PyTorch research-v1 prediction response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["success", "schema_version", "contract_id", "provider", "model_version", "dataset_version", "research_use_only", "clinically_validated", "probability_calibration_verified", "input_mode", "final_stage", "final_stage_label", "binary_probabilities", "binary_threshold", "grading_performed", "conditional_stage_probabilities", "joint_stage_probabilities", "model_bundle", "service_inference_ms", "explanation_available", "input_sha256", "input_geometry"],
+  "properties": {
+    "success": { "const": true },
+    "schema_version": { "const": 4 },
+    "contract_id": { "const": "nafld-pytorch-research-v1-single-frame-v1" },
+    "provider": { "const": "pytorch_research_v1" },
+    "model_version": {
+      "type": "object", "additionalProperties": false,
+      "required": ["binary", "staging"],
+      "properties": { "binary": { "const": "nafld-research-v1" }, "staging": { "const": "nafld-research-v1" } }
+    },
+    "dataset_version": { "const": "48b42abbee97b892591054019cdb4f84a65af9e0cd88d09fcbf8b3ae2a8b9856" },
+    "research_use_only": { "const": true },
+    "clinically_validated": { "const": false },
+    "probability_calibration_verified": { "const": false },
+    "input_mode": { "const": "single_frame" },
+    "final_stage": { "type": "integer", "minimum": 0, "maximum": 3 },
+    "final_stage_label": { "enum": ["Stage 0 — Non-NAFLD / Normal", "Stage 1 — NAFLD, Mild steatosis", "Stage 2 — NAFLD, Moderate steatosis", "Stage 3 — NAFLD, Severe steatosis"] },
+    "binary_probabilities": { "$ref": "#/$defs/binary" },
+    "binary_threshold": { "const": 0.5 },
+    "grading_performed": { "type": "boolean" },
+    "conditional_stage_probabilities": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/conditional" }] },
+    "joint_stage_probabilities": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/joint" }] },
+    "model_bundle": {
+      "type": "object", "additionalProperties": false, "required": ["binary", "staging"],
+      "properties": {
+        "binary": { "$ref": "#/$defs/binaryBundle" },
+        "staging": { "$ref": "#/$defs/stagingBundle" }
+      }
+    },
+    "service_inference_ms": { "type": "number", "minimum": 0 },
+    "explanation_available": { "const": true },
+    "input_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "input_geometry": {
+      "type": "object", "additionalProperties": false, "required": ["width", "height", "mode"],
+      "properties": { "width": { "type": "integer", "minimum": 1 }, "height": { "type": "integer", "minimum": 1 }, "mode": { "enum": ["RGB", "L"] } }
+    }
+  },
+  "$defs": {
+    "probability": { "type": "number", "minimum": 0, "maximum": 1 },
+    "binary": { "type": "object", "additionalProperties": false, "required": ["Non-NAFLD", "NAFLD"], "properties": { "Non-NAFLD": { "$ref": "#/$defs/probability" }, "NAFLD": { "$ref": "#/$defs/probability" } } },
+    "conditional": { "type": "object", "additionalProperties": false, "required": ["1", "2", "3"], "properties": { "1": { "$ref": "#/$defs/probability" }, "2": { "$ref": "#/$defs/probability" }, "3": { "$ref": "#/$defs/probability" } } },
+    "joint": { "type": "object", "additionalProperties": false, "required": ["0", "1", "2", "3"], "properties": { "0": { "$ref": "#/$defs/probability" }, "1": { "$ref": "#/$defs/probability" }, "2": { "$ref": "#/$defs/probability" }, "3": { "$ref": "#/$defs/probability" } } },
+    "binaryBundle": { "type": "object", "additionalProperties": false, "required": ["architecture", "members", "manifest_sha256"], "properties": { "architecture": { "const": "densenet121" }, "members": { "const": 5 }, "manifest_sha256": { "const": "daa75075d2de25823a2648dcb061b273e46459513657014cb239b5b8d2975cd9" } } },
+    "stagingBundle": { "type": "object", "additionalProperties": false, "required": ["architecture", "members", "manifest_sha256"], "properties": { "architecture": { "const": "efficientnet_b0" }, "members": { "const": 5 }, "manifest_sha256": { "const": "12a0894534756dd380d08a4bfe9a6fe8086abde1420fd068140e709d3d83a52a" } } }
+  }
+}

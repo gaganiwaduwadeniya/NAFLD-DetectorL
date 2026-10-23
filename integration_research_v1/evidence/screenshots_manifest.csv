@@ -1,0 +1,2 @@
+filename,evidence_type,source_privacy,model,member,target,redaction_or_retention,validity
+06_real_gradcam_e2e.png,real_gradcam,approved_anonymized_example,EfficientNet-B0 staging,0,Stage 2 conditional target,input_not_packaged_no_additional_redaction,genuine_authenticated_runtime_output

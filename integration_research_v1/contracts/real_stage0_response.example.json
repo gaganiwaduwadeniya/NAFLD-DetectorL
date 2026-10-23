@@ -1,0 +1,16 @@
+{
+  "evidence": "real local CPU inference on approved anonymized input",
+  "schema_version": 4,
+  "contract_id": "nafld-pytorch-research-v1-single-frame-v1",
+  "provider": "pytorch_research_v1",
+  "final_stage": 0,
+  "final_stage_label": "Stage 0 — Non-NAFLD / Normal",
+  "binary_probabilities": { "Non-NAFLD": 0.9257839322090149, "NAFLD": 0.0742160826921463 },
+  "binary_threshold": 0.5,
+  "grading_performed": false,
+  "conditional_stage_probabilities": null,
+  "joint_stage_probabilities": null,
+  "research_use_only": true,
+  "clinically_validated": false,
+  "probability_calibration_verified": false
+}

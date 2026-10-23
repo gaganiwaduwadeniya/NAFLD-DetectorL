@@ -28,6 +28,7 @@ export const ScanTable: React.FC<ScanTableProps> = ({ scans, showPhysicianColumn
 
   // Display label shown in the Diagnostic Output column
   const displayLabel = (s: Scan): string => {
+    if (s.schemaVersion === 4 && s.finalStageLabel) return s.finalStageLabel;
     if (s.schemaVersion === 3 && s.finalLabel) return s.finalLabel;
     return s.prediction ?? 'Unknown';
   };
@@ -101,7 +102,7 @@ export const ScanTable: React.FC<ScanTableProps> = ({ scans, showPhysicianColumn
   // Confidence/prob display string: V3 shows "X% prob", legacy shows "X% conf"
   const probDisplay = (s: Scan): string => {
     if (s.confidence === undefined || s.confidence === null) return '';
-    const suffix = s.schemaVersion === 3 ? 'prob' : 'conf';
+    const suffix = s.schemaVersion === 3 || s.schemaVersion === 4 ? 'score' : 'conf';
     return `(${s.confidence.toFixed(1)}% ${suffix})`;
   };
 
@@ -178,7 +179,7 @@ export const ScanTable: React.FC<ScanTableProps> = ({ scans, showPhysicianColumn
               </th>
               <th className="py-3 px-5 cursor-pointer hover:bg-slate-50" onClick={() => toggleSort('confidence')}>
                 <div className="flex items-center space-x-1">
-                  <span>Diagnostic Output</span>
+                  <span>Research Model Output</span>
                   <ArrowUpDown className="h-3 w-3 text-slate-400" />
                 </div>
               </th>
@@ -272,7 +273,7 @@ export const ScanTable: React.FC<ScanTableProps> = ({ scans, showPhysicianColumn
       {/* Table Footer */}
       <div className="p-4 bg-slate-50/50 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500">
         <span>Showing {filteredAndSortedScans.length} of {scans.length} total records</span>
-        <span className="font-mono">NAFLD-Detector V3</span>
+        <span className="font-mono">Versioned research records</span>
       </div>
     </div>
   );

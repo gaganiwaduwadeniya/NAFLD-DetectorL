@@ -1,0 +1,41 @@
+{
+  "integration_id": "nafld-pytorch-research-v1-single-frame-v1",
+  "date": "2026-10-24",
+  "new_service_files": [
+    "pytorch_service/__init__.py",
+    "pytorch_service/app.py",
+    "pytorch_service/contract.py",
+    "pytorch_service/runtime.py",
+    "pytorch_service/requirements.lock.txt"
+  ],
+  "new_application_files": [
+    "src/server/pytorchContract.ts",
+    "src/components/ResearchV1Card.tsx"
+  ],
+  "modified_application_files": [
+    ".env.example",
+    ".gitignore",
+    "package.json",
+    "package-lock.json",
+    "server.ts",
+    "src/types.ts",
+    "src/lib/db.ts",
+    "src/App.tsx",
+    "src/components/ImageUploader.tsx",
+    "src/components/ResultCard.tsx",
+    "src/components/ScanTable.tsx",
+    "src/pages/DoctorDashboard.tsx",
+    "src/pages/ScanDetail.tsx"
+  ],
+  "preservation": {
+    "old_tensorflow_models": true,
+    "old_flask_service": true,
+    "historical_v3_records_supported": true,
+    "datasets_modified": false,
+    "models_modified": false,
+    "training_performed": false,
+    "application_deployed": false
+  },
+  "restricted_runtime_pointer": "G:\\NAFLD New\\checkpoints\\research-v1",
+  "model_binaries_in_portable_zip": false
+}

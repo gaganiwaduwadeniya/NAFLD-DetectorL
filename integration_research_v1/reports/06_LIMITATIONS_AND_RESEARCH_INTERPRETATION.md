@@ -1,0 +1,7 @@
+# 06 — Limitations and research interpretation
+
+Engineering verification demonstrates that the selected weights load under their exact runtime, preprocessing and gated probability semantics are preserved, authenticated requests produce genuine predictions, history metadata is versioned, failures are closed, and a real Grad-CAM can be generated. It does not demonstrate clinical validity, diagnostic safety, probability calibration, causal medical reasoning, robustness to acquisition shift or generalization to another hospital.
+
+The development evidence contains only ten Normal patients. Selected results are internal out-of-fold/model-selection evidence, not an untouched external cohort. The selected conditional grader's Stage 2 recall was 18/46 (39.13%), and Mild/Moderate separation remains a known weakness. The complete cascade's internal macro F1 0.5682, balanced accuracy 0.6194 and exact accuracy 61/109 must not be compared as an independently confirmed improvement over direct V4 because preprocessing/folds differed.
+
+One frame does not necessarily represent a complete ultrasound examination. Source images may contain display overlays and acquisition shortcuts. Softmax values are not calibrated clinical probabilities. Grad-CAM is qualitative and cannot validate that the model uses clinically appropriate anatomy. No independent external patient cohort, formal reader study, deployment security assessment, retention policy approval or clinical workflow validation was performed.

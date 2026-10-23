@@ -34,11 +34,11 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelected, s
   };
 
   const validateAndSelectFile = (file: File) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/bmp'];
+    const allowedTypes = ['image/jpeg', 'image/png'];
     const maxSize = 20 * 1024 * 1024; // 20 MB — matches server enforcement
 
     if (!allowedTypes.includes(file.type)) {
-      alert('Unsupported file format. Please upload JPG, PNG, or BMP.');
+      alert('Unsupported file format. Please upload JPG or PNG.');
       return;
     }
 
@@ -86,7 +86,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelected, s
         type="file"
         id="input-file-upload"
         className="hidden"
-        accept=".jpg,.jpeg,.png,.bmp,image/jpeg,image/png,image/bmp"
+        accept=".jpg,.jpeg,.png,image/jpeg,image/png"
         onChange={handleChange}
       />
 
@@ -112,7 +112,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelected, s
             <h3 className="text-slate-800 font-bold text-sm mb-1">Upload Ultrasound Image</h3>
             <p className="text-slate-500 text-xs max-w-xs mb-4 leading-relaxed">
               Drag and drop your liver ultrasound image here or click to browse.
-              JPG, PNG, or BMP — up to 20 MB.
+              JPG or PNG — up to 20 MB.
             </p>
 
             {/* Research-only badge */}

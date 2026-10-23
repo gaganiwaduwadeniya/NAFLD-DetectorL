@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { ImageUploader } from '../components/ImageUploader';
 import { ResultCard } from '../components/ResultCard';
@@ -6,7 +6,7 @@ import { Scan } from '../types';
 import {
   Upload, User, Clipboard, Calendar, FileText,
   Activity, ShieldAlert, CheckCircle2, RefreshCw,
-  WifiOff
+  WifiOff, Sparkles
 } from 'lucide-react';
 
 export const DoctorDashboard: React.FC = () => {
@@ -23,6 +23,14 @@ export const DoctorDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isModelUnavailable, setIsModelUnavailable] = useState(false);
   const [scanResult, setScanResult] = useState<Scan | null>(null);
+  const [explanationUrl, setExplanationUrl] = useState<string | null>(null);
+  const [explanationMeta, setExplanationMeta] = useState<string | null>(null);
+  const [explanationLoading, setExplanationLoading] = useState(false);
+  const [explanationError, setExplanationError] = useState<string | null>(null);
+
+  useEffect(() => () => {
+    if (explanationUrl) URL.revokeObjectURL(explanationUrl);
+  }, [explanationUrl]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,6 +95,33 @@ export const DoctorDashboard: React.FC = () => {
     setScanResult(null);
     setError(null);
     setIsModelUnavailable(false);
+    setExplanationMeta(null);
+    setExplanationError(null);
+    if (explanationUrl) URL.revokeObjectURL(explanationUrl);
+    setExplanationUrl(null);
+  };
+
+  const handleExplain = async () => {
+    if (!selectedFile || scanResult?.schemaVersion !== 4) return;
+    setExplanationLoading(true);
+    setExplanationError(null);
+    try {
+      const form = new FormData();
+      form.append('image', selectedFile);
+      const response = await fetch('/api/explain', { method: 'POST', headers: getAuthHeaders(), body: form });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail.error || 'Grad-CAM generation failed.');
+      }
+      const blob = await response.blob();
+      if (explanationUrl) URL.revokeObjectURL(explanationUrl);
+      setExplanationUrl(URL.createObjectURL(blob));
+      setExplanationMeta(response.headers.get('x-nafld-explanation'));
+    } catch (err: any) {
+      setExplanationError(err.message || 'Grad-CAM generation failed.');
+    } finally {
+      setExplanationLoading(false);
+    }
   };
 
   return (
@@ -96,7 +131,7 @@ export const DoctorDashboard: React.FC = () => {
           Liver Ultrasound Analysis
         </h1>
         <p className="text-sm text-slate-500">
-          Upload a liver ultrasound image and enter patient demographics to run the NAFLD detection model.
+          Upload one liver ultrasound frame and enter research-case metadata to run the locked NAFLD research cascade.
           For research use only — results are not for clinical diagnosis.
         </p>
       </div>
@@ -117,7 +152,7 @@ export const DoctorDashboard: React.FC = () => {
                 <div>
                   <span className="font-bold block mb-0.5">Inference Service Unavailable</span>
                   <span>
-                    The ML model service is not reachable. Ensure the Flask service is running and
+                    The model service is not reachable. Ensure the selected inference service is running and
                     <code className="mx-1 px-1 bg-amber-100 rounded font-mono">ML_SERVICE_URL</code>
                     is set correctly, then try again.
                   </span>
@@ -141,7 +176,7 @@ export const DoctorDashboard: React.FC = () => {
               {/* Patient Name */}
               <div className="sm:col-span-6 space-y-1.5">
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-                  Patient Full Name
+                  Research Case Name
                 </label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
@@ -152,7 +187,7 @@ export const DoctorDashboard: React.FC = () => {
                     disabled={loading || !!scanResult}
                     onChange={(e) => setPatientName(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white disabled:bg-slate-50 disabled:text-slate-500"
-                    placeholder="E.g. Margaret Carter"
+                    placeholder="E.g. Research Case A"
                     id="patient-name"
                   />
                 </div>
@@ -204,7 +239,7 @@ export const DoctorDashboard: React.FC = () => {
               <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
                 Ultrasound Image
               </label>
-              {scanResult ? (
+              {scanResult?.imageUrl ? (
                 <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-950 max-h-[350px]">
                   <img
                     src={scanResult.imageUrl}
@@ -212,6 +247,10 @@ export const DoctorDashboard: React.FC = () => {
                     className="w-full max-h-[350px] object-contain mx-auto"
                     referrerPolicy="no-referrer"
                   />
+                </div>
+              ) : scanResult ? (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-xs leading-relaxed text-slate-600" id="image-not-retained-notice">
+                  The uploaded image was processed in memory and was not retained in the research history record.
                 </div>
               ) : (
                 <ImageUploader selectedFile={selectedFile} onImageSelected={setSelectedFile} />
@@ -245,7 +284,7 @@ export const DoctorDashboard: React.FC = () => {
                   ) : (
                     <>
                       <Activity className="h-4 w-4" />
-                      <span>Run NAFLD Detection</span>
+                      <span>Run Research Analysis</span>
                     </>
                   )}
                 </button>
@@ -260,12 +299,35 @@ export const DoctorDashboard: React.FC = () => {
             <div className="space-y-4 animate-fade-in" id="diagnosis-result-display">
               <ResultCard scan={scanResult} />
 
+              {scanResult.schemaVersion === 4 && scanResult.explanationAvailable && (
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" id="gradcam-panel">
+                  <button
+                    type="button"
+                    onClick={handleExplain}
+                    disabled={explanationLoading}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-violet-700 disabled:bg-violet-300"
+                    id="btn-generate-gradcam"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    <span>{explanationLoading ? 'Generating verified Grad-CAM…' : 'Generate qualitative Grad-CAM'}</span>
+                  </button>
+                  {explanationError && <p className="mt-3 text-xs text-red-700">{explanationError}</p>}
+                  {explanationUrl && (
+                    <div className="mt-4 space-y-2">
+                      <img src={explanationUrl} alt="Qualitative Grad-CAM overlay" className="w-full rounded-xl border border-slate-200" id="gradcam-image" />
+                      <p className="text-[11px] leading-relaxed text-slate-500">Qualitative explanation from member 0 of the selected ensemble. It does not prove medical reasoning and must not be used as a segmentation.</p>
+                      {explanationMeta && <details className="text-[10px] text-slate-500"><summary className="cursor-pointer font-semibold">Explanation provenance</summary><code className="mt-2 block break-all rounded bg-slate-50 p-2">{explanationMeta}</code></details>}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Success badge */}
               <div className="flex items-center space-x-2.5 bg-emerald-50 border border-emerald-100/50 text-emerald-800 p-3.5 rounded-xl text-xs">
                 <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
                 <div>
-                  <span className="font-bold block">Scan Record Saved</span>
-                  <span>Result has been saved to the database.</span>
+                  <span className="font-bold block">Research Record Saved</span>
+                  <span>Scores and provenance were saved. The input image was not retained unless explicitly configured.</span>
                 </div>
               </div>
             </div>
@@ -280,7 +342,7 @@ export const DoctorDashboard: React.FC = () => {
               <div className="max-w-xs">
                 <h3 className="font-sans font-bold text-slate-700 text-sm">Output Panel</h3>
                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  Upload a liver ultrasound image and fill in patient details to run the detection model.
+                  Upload a liver ultrasound frame and fill in research-case details to run the selected model cascade.
                 </p>
               </div>
             </div>

@@ -5,6 +5,7 @@ import {
   ShieldAlert, CheckCircle, AlertTriangle, FlaskConical,
   Info, Layers, Cpu, Hash, Beaker
 } from 'lucide-react';
+import { ResearchV1Card } from './ResearchV1Card';
 
 interface ResultCardProps {
   scan: Scan;
@@ -70,6 +71,9 @@ const V3Header: React.FC<{ finalLabel: string; isNafld: boolean }> = ({ finalLab
 // ---- main component ---------------------------------------------------------
 
 export const ResultCard: React.FC<ResultCardProps> = ({ scan }) => {
+  if (scan.schemaVersion === 4) {
+    return <ResearchV1Card scan={scan} />;
+  }
   const isV3 = scan.schemaVersion === 3;
 
   // Legacy path values

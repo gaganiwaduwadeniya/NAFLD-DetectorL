@@ -1,0 +1,23 @@
+{
+  "executed": {
+    "typescript_compile": "pass",
+    "typescript_contract_tests": { "passed": 5, "failed": 0 },
+    "python_contract_tests": { "passed": 4, "failed": 0 },
+    "exact_model_members_loaded": 10,
+    "direct_real_cases": 3,
+    "direct_repeat_stability": "pass",
+    "authenticated_prediction": { "http_status": 200, "final_stage": 2 },
+    "authenticated_history": "pass",
+    "unauthorized_history_status": 401,
+    "real_gradcam_status": 200,
+    "service_outage_status": 503,
+    "outage_database_writes": 0
+  },
+  "incomplete": [
+    "production frontend build did not complete in bounded mounted-drive run",
+    "browser UI screenshots blocked by headless Vite rendering in this environment"
+  ],
+  "privacy": "synthetic identities; approved anonymized inputs; raw inputs omitted",
+  "training_performed": false,
+  "external_uploads": false
+}

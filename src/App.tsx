@@ -23,7 +23,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRole?: 'docto
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center space-y-4">
           <div className="h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm font-semibold text-slate-500">Decrypting clinical session...</span>
+          <span className="text-sm font-semibold text-slate-500">Loading research session...</span>
         </div>
       </div>
     );
@@ -42,7 +42,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRole?: 'docto
           </div>
           <h2 className="text-lg font-bold text-slate-800">Permission Denied</h2>
           <p className="text-xs text-slate-500">
-            Your clinical account does not hold the permissions required to enter this sector.
+            Your account does not hold the permissions required to open this research workspace.
           </p>
           <Navigate to="/" replace />
         </div>
@@ -103,18 +103,18 @@ const AppContent: React.FC = () => {
           </Routes>
         </main>
 
-        {/* Global Hospital Grade Footer */}
+        {/* Global research-use footer */}
         <footer className="bg-white border-t border-slate-200 py-6 text-center text-slate-400 text-xs">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
             <div>
-              &copy; {new Date().getFullYear()} NAFLD Diagnostic Support System • Level-3 AI Medical Grade System
+              &copy; {new Date().getFullYear()} NAFLD Research Decision-Support Prototype
             </div>
             <div className="flex items-center space-x-4 font-mono text-[10px] tracking-wider uppercase font-medium">
               <span className="flex items-center text-blue-600">
                 <span className="h-1.5 w-1.5 rounded-full bg-blue-600 mr-1.5 animate-ping" />
-                SYSTEM LIVE (V1.0.4)
+                RESEARCH SERVICE
               </span>
-              <span>HIPAA COMPLIANT DB</span>
+              <span>NOT CLINICALLY VALIDATED</span>
             </div>
           </div>
         </footer>

@@ -1,0 +1,12 @@
+{
+  "zip_path": "/mnt/g/nafld-detectorl/NAFLD_CHAPTER6_EVIDENCE_RESEARCH_V1_2026-10-24.zip",
+  "zip_sha256": "c6115b5b05255503af55005fde647926f7754aeffd9633ae142e84cb18c1ff24",
+  "packaged_file_count": 40,
+  "extracted_file_count": 40,
+  "extraction_verified": true,
+  "all_listed_hashes_verified": true,
+  "prohibited_names_found": [],
+  "model_binaries_included": false,
+  "raw_input_images_included": false,
+  "credentials_included": false
+}

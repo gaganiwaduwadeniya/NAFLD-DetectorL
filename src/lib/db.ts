@@ -16,7 +16,11 @@ import {
 import { User, Scan, AdminStats } from '../types.js';
 
 // Paths for local storage fallback
-const DATA_DIR = path.join(process.cwd(), 'data');
+// Tests and local evidence runs can isolate storage without touching the
+// existing application history. Production/default behavior remains `data/`.
+const DATA_DIR = process.env.LOCAL_DATA_DIR
+  ? path.resolve(process.env.LOCAL_DATA_DIR)
+  : path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
 // Ensure data directory and file exist

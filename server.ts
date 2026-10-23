@@ -19,6 +19,11 @@ import {
 import { Scan, User } from './src/types.js';
 import { storage, isFirebaseConfigured } from './src/lib/firebase.js';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import {
+  PytorchResearchResponse,
+  validatePytorchResearchResponse,
+  validateUploadedImage,
+} from './src/server/pytorchContract.js';
 
 dotenv.config();
 
@@ -31,7 +36,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'nafld-diagnostic-system-secret-key
 // Phase 3 requirement: if absent, /api/predict returns 503; no simulation.
 // ---------------------------------------------------------------------------
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL?.replace(/\/$/, '') ?? '';
-const ML_INFERENCE_TIMEOUT_MS = 15_000; // 15 seconds
+const MODEL_PROVIDER = process.env.MODEL_PROVIDER || 'tensorflow_v3';
+const ML_INFERENCE_TIMEOUT_MS = Number.parseInt(process.env.ML_INFERENCE_TIMEOUT_MS || '60000', 10);
+const STORE_UPLOAD_IMAGES = process.env.STORE_UPLOAD_IMAGES === 'true';
 
 if (!ML_SERVICE_URL) {
   console.warn(
@@ -52,11 +59,11 @@ const upload = multer({
     fileSize: 20 * 1024 * 1024, // 20 MB
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/bmp'];
+    const allowedTypes = ['image/jpeg', 'image/png'];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only JPG, PNG, and BMP are accepted.'));
+      cb(new Error('Invalid file type. Only JPEG and PNG are accepted.'));
     }
   }
 });
@@ -297,6 +304,10 @@ app.post('/api/predict', authenticateToken, upload.single('image'), async (req: 
   if (!req.file) {
     return res.status(400).json({ error: 'An ultrasound image is required.' });
   }
+  const imageValidationError = validateUploadedImage(req.file.buffer, req.file.mimetype);
+  if (imageValidationError) {
+    return res.status(400).json({ error: imageValidationError });
+  }
   if (!patientName || !patientAge || !patientGender) {
     return res.status(400).json({ error: 'Patient demographic information (name, age, gender) is required.' });
   }
@@ -306,6 +317,9 @@ app.post('/api/predict', authenticateToken, upload.single('image'), async (req: 
     return res.status(503).json({
       error: 'The ML inference service is not configured. Set the ML_SERVICE_URL environment variable and restart the server.'
     });
+  }
+  if (!['tensorflow_v3', 'pytorch_research_v1'].includes(MODEL_PROVIDER)) {
+    return res.status(503).json({ error: 'The configured model provider is not supported.' });
   }
 
   const doctorId = req.user.uid;
@@ -319,7 +333,7 @@ app.post('/api/predict', authenticateToken, upload.single('image'), async (req: 
   const fetchStartTime = Date.now();
 
   try {
-    console.log(`[predict] Forwarding image (${req.file.size} bytes, ${req.file.mimetype}) to Flask at ${ML_SERVICE_URL}`);
+    console.log(`[predict] Forwarding ${req.file.size} byte ${req.file.mimetype} image to configured internal model provider.`);
 
     const formData = new FormData();
     const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
@@ -340,6 +354,7 @@ app.post('/api/predict', authenticateToken, upload.single('image'), async (req: 
       try {
         const errBody = await flaskResponse.json();
         if (errBody?.error) flaskError = errBody.error;
+        if (errBody?.detail) flaskError = errBody.detail;
       } catch { /* ignore parse failure */ }
       console.warn(`[predict] Flask returned ${flaskResponse.status}: ${flaskError}`);
       return res.status(400).json({ error: flaskError });
@@ -369,18 +384,29 @@ app.post('/api/predict', authenticateToken, upload.single('image'), async (req: 
     return res.status(503).json({ error: 'The inference service is unavailable. Please retry.' });
   }
 
-  // --- Validate the V3 response schema before touching the database. ---
-  const schemaError = validateV3Response(flaskData);
+  // Validate the explicitly configured provider response before any storage.
+  // There is no automatic fallback between V3 and research-v1.
+  const schemaError = MODEL_PROVIDER === 'pytorch_research_v1'
+    ? validatePytorchResearchResponse(flaskData)
+    : validateV3Response(flaskData);
   if (schemaError) {
-    console.error('[predict] Flask response failed schema validation:', schemaError, JSON.stringify(flaskData));
+    console.error('[predict] Internal model response failed schema validation:', schemaError);
     return res.status(502).json({ error: 'The inference service returned an unexpected response format.' });
   }
 
   // --- Derived legacy fields for backwards compatibility ---
-  const isNafld = flaskData.binary_result === 'NAFLD';
+  const isPytorchResearchV1 = MODEL_PROVIDER === 'pytorch_research_v1';
+  const researchData = flaskData as PytorchResearchResponse;
+  const isNafld = isPytorchResearchV1
+    ? researchData.final_stage > 0
+    : flaskData.binary_result === 'NAFLD';
   const prediction: 'Normal' | 'Abnormal' = isNafld ? 'Abnormal' : 'Normal';
-  const probNafld: number = flaskData.binary_prob_nafld;
-  const probNonNafld: number = flaskData.binary_prob_non_nafld;
+  const probNafld: number = isPytorchResearchV1
+    ? researchData.binary_probabilities.NAFLD
+    : flaskData.binary_prob_nafld;
+  const probNonNafld: number = isPytorchResearchV1
+    ? researchData.binary_probabilities['Non-NAFLD']
+    : flaskData.binary_prob_non_nafld;
   const confidence = parseFloat(((isNafld ? probNafld : probNonNafld) * 100).toFixed(1));
   const probabilities = {
     Normal: parseFloat((probNonNafld * 100).toFixed(1)),
@@ -391,7 +417,11 @@ app.post('/api/predict', authenticateToken, upload.single('image'), async (req: 
   const imageDims = parseImageDimensions(req.file.buffer, req.file.mimetype);
 
   let imageUrl = '';
+  const shouldStoreImage = !isPytorchResearchV1 || STORE_UPLOAD_IMAGES;
   try {
+    if (!shouldStoreImage) {
+      console.log('[predict] Input image retention is disabled for research-v1; storing metadata only.');
+    } else
     if (isFirebaseConfigured() && storage) {
       console.log('[predict] Uploading scan image to Firebase Storage...');
       const uniqueFilename = `scans/${Date.now()}-${req.file.originalname}`;
@@ -406,15 +436,20 @@ app.post('/api/predict', authenticateToken, upload.single('image'), async (req: 
       imageUrl = `data:${req.file.mimetype};base64,${base64Data}`;
     }
   } catch (storageErr: any) {
-    console.error('[predict] Image storage failed, falling back to base64:', storageErr.message);
-    const base64Data = req.file.buffer.toString('base64');
-    imageUrl = `data:${req.file.mimetype};base64,${base64Data}`;
+    if (isPytorchResearchV1) {
+      console.error('[predict] Optional image storage failed; retaining metadata only:', storageErr.message);
+      imageUrl = '';
+    } else {
+      console.error('[predict] Image storage failed, falling back to base64:', storageErr.message);
+      const base64Data = req.file.buffer.toString('base64');
+      imageUrl = `data:${req.file.mimetype};base64,${base64Data}`;
+    }
   }
 
   const crypto = await import('crypto');
   const scanId = 'scan-' + crypto.randomBytes(8).toString('hex');
 
-  // --- Phase 4: Construct complete versioned Scan record ---
+  // Construct a versioned record while retaining legacy display fields.
   const newScan: Scan = {
     id: scanId,
     patientName,
@@ -430,35 +465,64 @@ app.post('/api/predict', authenticateToken, upload.single('image'), async (req: 
     probabilities,
     timestamp: new Date().toISOString(),
 
-    // Phase 4 V3 Schema Versioned Metadata
-    schemaVersion: 3,
-    modelVersion: flaskData.model_version,
-    contractSha256: flaskData.contract_sha256,
-    inputMode: flaskData.input_mode || 'single_frame',
-    researchUseOnly: flaskData.research_use_only ?? true,
-
-    binaryResult: flaskData.binary_result,
-    binaryProbNafld: flaskData.binary_prob_nafld,
-    binaryProbNonNafld: flaskData.binary_prob_non_nafld,
-    binaryThreshold: flaskData.binary_threshold,
-    binaryFoldProbs: flaskData.binary_fold_probs || [],
-    binaryFoldStd: flaskData.binary_fold_std,
-
-    gradingPerformed: flaskData.grading_performed === true,
-    ...(flaskData.grading_performed === true ? {
-      gradingResult: flaskData.grading_result,
-      gradingProbModerateSevere: flaskData.grading_prob_moderate_severe,
-      gradingProbMild: flaskData.grading_prob_mild,
-      gradingThreshold: flaskData.grading_threshold,
-      gradingFoldProbs: flaskData.grading_fold_probs || [],
-      gradingFoldStd: flaskData.grading_fold_std,
-    } : {}),
-
-    finalLabel: flaskData.final_label,
     ...(imageDims.width ? { imageWidth: imageDims.width } : {}),
     ...(imageDims.height ? { imageHeight: imageDims.height } : {}),
     inferenceLatencyMs,
   };
+
+  if (isPytorchResearchV1) {
+    Object.assign(newScan, {
+      schemaVersion: 4,
+      provider: 'pytorch_research_v1',
+      contractId: researchData.contract_id,
+      modelVersion: 'nafld-research-v1',
+      datasetVersion: researchData.dataset_version,
+      inputMode: researchData.input_mode,
+      researchUseOnly: true,
+      clinicallyValidated: false,
+      probabilityCalibrationVerified: false,
+      finalStage: researchData.final_stage,
+      finalStageLabel: researchData.final_stage_label,
+      binaryScoreNafld: researchData.binary_probabilities.NAFLD,
+      binaryScoreNonNafld: researchData.binary_probabilities['Non-NAFLD'],
+      binaryThreshold: researchData.binary_threshold,
+      gradingPerformed: researchData.grading_performed,
+      ...(researchData.conditional_stage_probabilities ? { conditionalStageScores: researchData.conditional_stage_probabilities } : {}),
+      ...(researchData.joint_stage_probabilities ? { jointStageScores: researchData.joint_stage_probabilities } : {}),
+      binaryArchitecture: researchData.model_bundle.binary.architecture,
+      stagingArchitecture: researchData.model_bundle.staging.architecture,
+      binaryManifestSha256: researchData.model_bundle.binary.manifest_sha256,
+      stagingManifestSha256: researchData.model_bundle.staging.manifest_sha256,
+      explanationAvailable: researchData.explanation_available,
+      imageStored: Boolean(imageUrl),
+      serviceInferenceMs: researchData.service_inference_ms,
+      totalRequestMs: inferenceLatencyMs,
+    });
+  } else {
+    Object.assign(newScan, {
+      schemaVersion: 3,
+      modelVersion: flaskData.model_version,
+      contractSha256: flaskData.contract_sha256,
+      inputMode: flaskData.input_mode || 'single_frame',
+      researchUseOnly: flaskData.research_use_only ?? true,
+      binaryResult: flaskData.binary_result,
+      binaryProbNafld: flaskData.binary_prob_nafld,
+      binaryProbNonNafld: flaskData.binary_prob_non_nafld,
+      binaryThreshold: flaskData.binary_threshold,
+      binaryFoldProbs: flaskData.binary_fold_probs || [],
+      binaryFoldStd: flaskData.binary_fold_std,
+      gradingPerformed: flaskData.grading_performed === true,
+      ...(flaskData.grading_performed === true ? {
+        gradingResult: flaskData.grading_result,
+        gradingProbModerateSevere: flaskData.grading_prob_moderate_severe,
+        gradingProbMild: flaskData.grading_prob_mild,
+        gradingThreshold: flaskData.grading_threshold,
+        gradingFoldProbs: flaskData.grading_fold_probs || [],
+        gradingFoldStd: flaskData.grading_fold_std,
+      } : {}),
+      finalLabel: flaskData.final_label,
+    });
+  }
 
   try {
     await dbCreateScan(newScan);
@@ -468,10 +532,52 @@ app.post('/api/predict', authenticateToken, upload.single('image'), async (req: 
   }
 
   console.log(
-    `[predict] Scan ${scanId} saved (schemaVersion=3, final_label=${flaskData.final_label}, ` +
+    `[predict] Scan ${scanId} saved (schemaVersion=${newScan.schemaVersion}, final_stage=${newScan.finalStage ?? 'legacy'}, ` +
     `latency=${inferenceLatencyMs}ms, size=${imageDims.width}x${imageDims.height})`
   );
   res.json(newScan);
+});
+
+// Protected, stateless explanation proxy. Explanations are generated from the
+// current upload only and are never stored in scan history by this route.
+app.post('/api/explain', authenticateToken, upload.single('image'), async (req: Request | any, res: Response) => {
+  if (MODEL_PROVIDER !== 'pytorch_research_v1') {
+    return res.status(409).json({ error: 'Grad-CAM is available only for the PyTorch research-v1 provider.' });
+  }
+  if (!req.file) return res.status(400).json({ error: 'An ultrasound image is required.' });
+  const imageError = validateUploadedImage(req.file.buffer, req.file.mimetype);
+  if (imageError) return res.status(400).json({ error: imageError });
+  if (!ML_SERVICE_URL) return res.status(503).json({ error: 'The model service is not configured.' });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ML_INFERENCE_TIMEOUT_MS);
+  try {
+    const form = new FormData();
+    form.append('image', new Blob([req.file.buffer], { type: req.file.mimetype }), 'research-input');
+    const response = await fetch(`${ML_SERVICE_URL}/api/explain`, { method: 'POST', body: form, signal: controller.signal });
+    clearTimeout(timeout);
+    if (!response.ok) {
+      return res.status(response.status >= 500 ? 503 : 400).json({ error: 'The explanation service could not process this image.' });
+    }
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.startsWith('image/png')) return res.status(502).json({ error: 'The explanation service returned an invalid media type.' });
+    const explanation = response.headers.get('x-nafld-explanation');
+    if (explanation) res.setHeader('X-NAFLD-Explanation', explanation);
+    res.type('png').send(Buffer.from(await response.arrayBuffer()));
+  } catch (error: any) {
+    clearTimeout(timeout);
+    return res.status(503).json({ error: error?.name === 'AbortError' ? 'The explanation request timed out.' : 'The explanation service is unavailable.' });
+  }
+});
+
+app.get('/api/model/health', authenticateToken, async (_req: Request, res: Response) => {
+  if (!ML_SERVICE_URL) return res.status(503).json({ ready: false, provider: MODEL_PROVIDER });
+  try {
+    const response = await fetch(`${ML_SERVICE_URL}/ready`, { signal: AbortSignal.timeout(5_000) });
+    const body = await response.json();
+    return res.status(response.ok ? 200 : 503).json(body);
+  } catch {
+    return res.status(503).json({ ready: false, provider: MODEL_PROVIDER });
+  }
 });
 
 // 5. Get List of Scans (doctor-specific or all for admin)
@@ -485,12 +591,15 @@ app.get('/api/scans', authenticateToken, async (req: Request | any, res: Respons
 });
 
 // 6. Get Single Scan Details
-app.get('/api/scans/:id', authenticateToken, async (req: Request, res: Response) => {
+app.get('/api/scans/:id', authenticateToken, async (req: Request | any, res: Response) => {
   const { id } = req.params;
   try {
     const scan = await dbGetScanById(id);
     if (!scan) {
-      return res.status(404).json({ error: 'Diagnostic scan not found' });
+      return res.status(404).json({ error: 'Research scan not found' });
+    }
+    if (req.user.role !== 'admin' && scan.doctorId !== req.user.uid) {
+      return res.status(404).json({ error: 'Research scan not found' });
     }
     res.json(scan);
   } catch (error: any) {

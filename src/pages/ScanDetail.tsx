@@ -117,14 +117,20 @@ export const ScanDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* Main Image Frame */}
+            {/* Main Image Frame. Research-v1 normally retains metadata only. */}
             <div className="bg-slate-950 flex items-center justify-center border-b border-slate-200 min-h-[350px]">
-              <img
-                src={scan.imageUrl}
-                alt="Patient Liver Ultrasound Scan"
-                className="w-full max-h-[500px] object-contain mx-auto"
-                referrerPolicy="no-referrer"
-              />
+              {scan.imageUrl ? (
+                <img
+                  src={scan.imageUrl}
+                  alt="Liver ultrasound research input"
+                  className="w-full max-h-[500px] object-contain mx-auto"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="max-w-sm px-8 text-center text-sm leading-relaxed text-slate-300" id="history-image-not-retained">
+                  Input image not retained. This research record stores model scores, provenance and geometry only.
+                </div>
+              )}
             </div>
 
             {/* Technical Metadata panel */}
@@ -149,8 +155,8 @@ export const ScanDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* V3 Inference metadata footer */}
-            {scan.schemaVersion === 3 && (
+            {/* Versioned inference metadata footer */}
+            {(scan.schemaVersion === 3 || scan.schemaVersion === 4) && (
               <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/60 flex flex-wrap gap-4 text-[10px] font-mono text-slate-500">
                 {scan.inferenceLatencyMs !== undefined && (
                   <span className="flex items-center gap-1">
@@ -171,7 +177,7 @@ export const ScanDetail: React.FC = () => {
             )}
           </div>
 
-          {/* Right: Diagnosis Result */}
+          {/* Right: research model result */}
           <div className="lg:col-span-5">
             <ResultCard scan={scan} />
           </div>

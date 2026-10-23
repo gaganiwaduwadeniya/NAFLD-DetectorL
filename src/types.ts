@@ -42,7 +42,38 @@ export interface V3InferenceMetadata {
   inferenceLatencyMs?: number;
 }
 
-export interface Scan extends Partial<V3InferenceMetadata> {
+export interface ResearchV1InferenceMetadata {
+  schemaVersion: 4;
+  provider: 'pytorch_research_v1';
+  contractId: 'nafld-pytorch-research-v1-single-frame-v1';
+  modelVersion: string;
+  datasetVersion: string;
+  inputMode: 'single_frame';
+  researchUseOnly: true;
+  clinicallyValidated: false;
+  probabilityCalibrationVerified: false;
+  finalStage: 0 | 1 | 2 | 3;
+  finalStageLabel: string;
+  binaryScoreNafld: number;
+  binaryScoreNonNafld: number;
+  binaryThreshold: number;
+  gradingPerformed: boolean;
+  conditionalStageScores?: { '1': number; '2': number; '3': number };
+  jointStageScores?: { '0': number; '1': number; '2': number; '3': number };
+  binaryArchitecture: 'densenet121';
+  stagingArchitecture: 'efficientnet_b0';
+  binaryManifestSha256: string;
+  stagingManifestSha256: string;
+  explanationAvailable: boolean;
+  imageStored: boolean;
+  serviceInferenceMs?: number;
+  totalRequestMs?: number;
+  imageWidth?: number;
+  imageHeight?: number;
+}
+
+export interface Scan extends Partial<Omit<V3InferenceMetadata, 'schemaVersion' | 'modelVersion' | 'inputMode' | 'researchUseOnly' | 'gradingPerformed' | 'imageWidth' | 'imageHeight'>>,
+  Partial<Omit<ResearchV1InferenceMetadata, 'schemaVersion' | 'modelVersion' | 'inputMode' | 'researchUseOnly' | 'gradingPerformed' | 'imageWidth' | 'imageHeight'>> {
   id: string;
   patientName: string;
   patientAge: number;
@@ -56,6 +87,13 @@ export interface Scan extends Partial<V3InferenceMetadata> {
   confidence: number;
   probabilities: ScanProbabilities;
   timestamp: string; // ISO format or Firestore Timestamp representation
+  schemaVersion?: 3 | 4;
+  modelVersion?: string;
+  inputMode?: 'single_frame';
+  researchUseOnly?: boolean;
+  gradingPerformed?: boolean;
+  imageWidth?: number;
+  imageHeight?: number;
 }
 
 export interface AuthState {

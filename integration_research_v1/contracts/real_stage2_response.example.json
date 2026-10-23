@@ -1,0 +1,20 @@
+{
+  "evidence": "real local CPU inference on approved anonymized input",
+  "schema_version": 4,
+  "contract_id": "nafld-pytorch-research-v1-single-frame-v1",
+  "provider": "pytorch_research_v1",
+  "final_stage": 2,
+  "final_stage_label": "Stage 2 — NAFLD, Moderate steatosis",
+  "binary_probabilities": { "Non-NAFLD": 0.21096202731132507, "NAFLD": 0.7890379428863525 },
+  "binary_threshold": 0.5,
+  "grading_performed": true,
+  "conditional_stage_probabilities": { "1": 0.12154607474803925, "2": 0.5155408382415771, "3": 0.3629130721092224 },
+  "joint_stage_probabilities": { "0": 0.21096202731132507, "1": 0.09590446478510373, "2": 0.40678128248003986, "3": 0.2863521838636274 },
+  "model_bundle": {
+    "binary": { "architecture": "densenet121", "members": 5, "manifest_sha256": "daa75075d2de25823a2648dcb061b273e46459513657014cb239b5b8d2975cd9" },
+    "staging": { "architecture": "efficientnet_b0", "members": 5, "manifest_sha256": "12a0894534756dd380d08a4bfe9a6fe8086abde1420fd068140e709d3d83a52a" }
+  },
+  "research_use_only": true,
+  "clinically_validated": false,
+  "probability_calibration_verified": false
+}
