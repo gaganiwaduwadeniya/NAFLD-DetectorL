@@ -1,0 +1,20 @@
+# Keep incoming patient data and generated image/metadata outputs local.
+/*
+!/.gitignore
+!/__init__.py
+!/README.md
+!/AGENT_STATE.json
+!/requirements-review.txt
+!/requirements-training-check.txt
+!/requirements-training-check.lock.txt
+!/src/
+!/tests/
+!/configs/
+!/reports/
+!/notebooks/
+/configs/*.local.json
+/reports/dataset_audit.json
+/reports/source_preservation.json
+__pycache__/
+.pytest_cache/
+*.pyc

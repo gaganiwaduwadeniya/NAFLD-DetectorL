@@ -1,0 +1,6 @@
+# Isolated CPU construction/inference/serialization checks. No fitting.
+# Do not install into the existing application or preprocessing review environment.
+tensorflow-cpu==2.20.0
+numpy==2.2.6
+Pillow==13.0.0
+pytest==9.1.1
