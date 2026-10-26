@@ -6,6 +6,10 @@ import firebaseConfigJson from '../../firebase-applet-config.json';
 
 // Check if Firebase config has valid details or if env variables exist
 export const isFirebaseConfigured = (): boolean => {
+  if (process.env.USE_LOCAL_DB === 'true') {
+    return false;
+  }
+
   return !!(
     firebaseConfigJson?.apiKey ||
     process.env.NEXT_PUBLIC_FIREBASE_API_KEY ||
@@ -46,7 +50,7 @@ if (isFirebaseConfigured()) {
     console.error('Error initializing Firebase:', error);
   }
 } else {
-  console.log('Firebase env variables not found or incomplete. Falling back to local/in-memory database.');
+  console.log('Firebase disabled or not configured. Falling back to the local database.');
 }
 
 export { app, db, auth, storage };

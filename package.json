@@ -4,12 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "app": "bash scripts/run-local-research-ui.sh",
     "dev": "tsx server.ts",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test:integration-contract": "node --import tsx integration_research_v1/tests/pytorchContract.test.ts"
+    "test:integration-contract": "node --import tsx integration_research_v1/tests/pytorchContract.test.ts",
+    "test:local-db": "node --import tsx --test integration_research_v1/tests/firebaseLocalMode.test.ts",
+    "test:launcher": "node --test integration_research_v1/tests/launcher.test.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

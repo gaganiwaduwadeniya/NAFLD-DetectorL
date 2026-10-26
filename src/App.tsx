@@ -20,10 +20,10 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRole?: 'docto
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-canvas">
         <div className="flex flex-col items-center space-y-4">
-          <div className="h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm font-semibold text-slate-500">Loading research session...</span>
+          <div className="h-9 w-9 rounded-full border-4 border-brand-200 border-t-brand-600 animate-spin" />
+          <span className="text-sm font-medium text-slate-600">Opening research workspace…</span>
         </div>
       </div>
     );
@@ -35,8 +35,8 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRole?: 'docto
 
   if (allowedRole && user.role !== allowedRole) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-        <div className="max-w-md w-full text-center space-y-4 bg-white p-8 rounded-2xl border border-slate-100 shadow-sm">
+      <div className="min-h-screen flex items-center justify-center bg-canvas px-4">
+        <div className="surface-panel max-w-md w-full text-center space-y-4 p-8 rounded-xl">
           <div className="inline-flex p-3 bg-red-100 text-red-600 rounded-full">
             <ShieldAlert className="h-6 w-6" />
           </div>
@@ -59,7 +59,7 @@ const AppContent: React.FC = () => {
 
   return (
     <Router>
-      <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans selection:bg-blue-100 selection:text-blue-800">
+      <div className="min-h-screen bg-transparent text-slate-800 flex flex-col font-sans">
         <Navbar />
         <main className="flex-grow">
           <Routes>
@@ -104,17 +104,12 @@ const AppContent: React.FC = () => {
         </main>
 
         {/* Global research-use footer */}
-        <footer className="bg-white border-t border-slate-200 py-6 text-center text-slate-400 text-xs">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div>
-              &copy; {new Date().getFullYear()} NAFLD Research Decision-Support Prototype
-            </div>
-            <div className="flex items-center space-x-4 font-mono text-[10px] tracking-wider uppercase font-medium">
-              <span className="flex items-center text-blue-600">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-600 mr-1.5 animate-ping" />
-                RESEARCH SERVICE
-              </span>
-              <span>NOT CLINICALLY VALIDATED</span>
+        <footer className="mt-auto border-t border-slate-200 bg-white/80 py-5 text-xs text-slate-500">
+          <div className="mx-auto flex max-w-[1440px] flex-col gap-3 px-4 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
+            <div>&copy; {new Date().getFullYear()} NAFLD Research Console</div>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <span className="font-medium text-brand-700">Local research environment</span>
+              <span>Not clinically validated</span>
             </div>
           </div>
         </footer>

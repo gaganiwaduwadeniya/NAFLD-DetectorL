@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { AlertCircle, ClipboardList, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ScanTable } from '../components/ScanTable';
 import { Scan } from '../types';
-import { ClipboardList, AlertCircle, Loader2 } from 'lucide-react';
 
 export const PatientHistory: React.FC = () => {
   const { getAuthHeaders } = useAuth();
@@ -14,57 +14,28 @@ export const PatientHistory: React.FC = () => {
     const fetchScans = async () => {
       try {
         setLoading(true);
-        const headers = getAuthHeaders();
-        const res = await fetch('/api/scans', {
-          headers
-        });
-
-        if (!res.ok) {
-          throw new Error('Failed to retrieve scan archives from server.');
-        }
-
-        const data = await res.json();
-        setScans(data);
+        const response = await fetch('/api/scans', { headers: getAuthHeaders() });
+        if (!response.ok) throw new Error('Records could not be retrieved from the local store.');
+        setScans(await response.json());
       } catch (err: any) {
-        setError(err.message || 'Error fetching records.');
+        setError(err.message || 'Records could not be loaded.');
       } finally {
         setLoading(false);
       }
     };
-
     fetchScans();
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="patient-history-page">
-      <div className="space-y-2 mb-8">
-        <h1 className="font-sans font-extrabold text-slate-900 tracking-tight text-3xl flex items-center space-x-3">
-          <ClipboardList className="h-8 w-8 text-blue-600" />
-          <span>Patient Diagnosis Archive</span>
-        </h1>
-        <p className="text-sm text-slate-500">
-          Query and review historic liver ultrasound diagnostic records and predictions submitted under your clinical account.
-        </p>
-      </div>
+    <div className="mx-auto w-full max-w-[1440px] px-4 py-7 sm:px-6 sm:py-9 lg:px-8" id="patient-history-page">
+      <header className="mb-7 flex items-start gap-4 border-b border-slate-200 pb-6">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-brand-700"><ClipboardList className="h-5 w-5" /></span>
+        <div><p className="eyebrow">Local records</p><h1 className="mt-1 text-2xl font-semibold tracking-tight text-ink-950 sm:text-3xl">Research analysis history</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Review outputs created under your account. These are research records, not patient diagnoses.</p></div>
+      </header>
 
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-24 space-y-3" id="loading-spinner">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <span className="text-sm text-slate-500 font-medium">Fetching secure records database...</span>
-        </div>
-      ) : error ? (
-        <div className="bg-red-50 border border-red-100/50 p-5 rounded-2xl flex items-start space-x-3 text-red-800 text-sm max-w-xl mx-auto" id="error-display">
-          <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
-          <div>
-            <span className="font-bold block text-red-900 mb-1">Database Sync Error</span>
-            <p className="leading-relaxed">{error}</p>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          <ScanTable scans={scans} />
-        </div>
-      )}
+      {loading ? <div id="loading-spinner" className="flex items-center justify-center gap-3 py-24 text-sm text-slate-600" role="status"><Loader2 className="h-5 w-5 animate-spin text-brand-600" />Loading local records…</div>
+        : error ? <div id="error-display" className="mx-auto flex max-w-xl gap-3 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900" role="alert"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /><div><strong className="block">Unable to load records</strong><span>{error}</span></div></div>
+          : <ScanTable scans={scans} />}
     </div>
   );
 };

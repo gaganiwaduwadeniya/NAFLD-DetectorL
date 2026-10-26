@@ -1,186 +1,76 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { AlertCircle, ArrowLeft, Clock3, FileLock2, ImageOff, Loader2, Ruler, UserRound } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ResultCard } from '../components/ResultCard';
 import { Scan } from '../types';
-import { ArrowLeft, Loader2, AlertCircle, Eye, Clock, Cpu, Ruler } from 'lucide-react';
+
+const formatDate = (value: string) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat(undefined, { dateStyle: 'long', timeStyle: 'medium' }).format(date);
+};
 
 export const ScanDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getAuthHeaders, user } = useAuth();
-
   const [scan, setScan] = useState<Scan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchScanDetails = async () => {
+    const load = async () => {
       if (!id) return;
       try {
-        setLoading(true);
-        const headers = getAuthHeaders();
-        const res = await fetch(`/api/scans/${id}`, { headers });
-
-        if (!res.ok) {
-          throw new Error('Requested patient scan profile could not be found or retrieved.');
-        }
-
-        const data = await res.json();
-        setScan(data);
+        const response = await fetch(`/api/scans/${id}`, { headers: getAuthHeaders() });
+        if (!response.ok) throw new Error(response.status === 404 ? 'This record does not exist or is not available to your account.' : 'The record could not be retrieved.');
+        setScan(await response.json());
       } catch (err: any) {
-        setError(err.message || 'Error loading scan record.');
+        setError(err.message || 'The record could not be retrieved.');
       } finally {
         setLoading(false);
       }
     };
-
-    fetchScanDetails();
+    load();
   }, [id]);
 
-  const handleBack = () => {
-    if (user?.role === 'admin') {
-      navigate('/');
-    } else {
-      navigate('/history');
-    }
-  };
-
-  const formatDate = (isoStr: string) => {
-    try {
-      return new Date(isoStr).toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      });
-    } catch (e) {
-      return isoStr;
-    }
-  };
-
-  // Derive resolution string from scan metadata
-  const resolutionLabel = (s: Scan): string => {
-    if (s.imageWidth && s.imageHeight) {
-      return `${s.imageWidth} × ${s.imageHeight} px`;
-    }
-    return 'Unknown';
-  };
+  const goBack = () => navigate(user?.role === 'admin' ? '/' : '/history');
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="scan-detail-page">
-      {/* Back Button & Title block */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <button
-          onClick={handleBack}
-          className="inline-flex items-center space-x-2 px-3 py-1.5 border border-slate-200 hover:border-blue-500 hover:bg-blue-50/20 text-slate-600 hover:text-blue-600 rounded-xl text-xs font-semibold transition-all cursor-pointer w-fit"
-          id="btn-scan-detail-back"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span>Return to Dashboard</span>
-        </button>
-
-        {scan && (
-          <div className="text-right text-xs text-slate-500 font-mono">
-            Scan Timestamp: {formatDate(scan.timestamp)}
-          </div>
-        )}
-      </div>
+    <div className="mx-auto w-full max-w-[1440px] px-4 py-7 sm:px-6 sm:py-9 lg:px-8" id="scan-detail-page">
+      <header className="mb-7 border-b border-slate-200 pb-6">
+        <button id="btn-scan-detail-back" type="button" onClick={goBack} className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700 hover:text-brand-600"><ArrowLeft className="h-4 w-4" />{user?.role === 'admin' ? 'Back to overview' : 'Back to records'}</button>
+        {scan && <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"><div><p className="eyebrow">Saved research record</p><h1 className="mt-1 text-2xl font-semibold tracking-tight text-ink-950 sm:text-3xl">{scan.patientName}</h1></div><p className="text-sm text-slate-500">Created {formatDate(scan.timestamp)}</p></div>}
+      </header>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-24 space-y-3" id="loading-spinner">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <span className="text-sm text-slate-500 font-medium">Loading scan record…</span>
-        </div>
+        <div id="loading-spinner" className="flex items-center justify-center gap-3 py-24 text-sm text-slate-600" role="status"><Loader2 className="h-5 w-5 animate-spin text-brand-600" />Loading research record…</div>
       ) : error ? (
-        <div className="bg-red-50 border border-red-100/50 p-5 rounded-2xl flex items-start space-x-3 text-red-800 text-sm max-w-xl mx-auto" id="error-display">
-          <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
-          <div>
-            <span className="font-bold block text-red-900 mb-1">Scan Not Found</span>
-            <p className="leading-relaxed">{error}</p>
-          </div>
-        </div>
+        <div id="error-display" className="mx-auto flex max-w-xl gap-3 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900" role="alert"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /><div><strong className="block">Record unavailable</strong><span>{error}</span></div></div>
       ) : !scan ? (
-        <div className="text-center text-slate-500 py-12" id="not-found-display">
-          Scan record not found.
-        </div>
+        <p id="not-found-display" className="py-16 text-center text-sm text-slate-500">Record not found.</p>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left: Ultrasound Image Viewer */}
-          <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm" id="ultrasound-viewer">
-            <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
-              <div className="flex items-center space-x-2">
-                <Eye className="h-4 w-4 text-blue-600" />
-                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Ultrasound Viewer</span>
-              </div>
-            </div>
-
-            {/* Main Image Frame. Research-v1 normally retains metadata only. */}
-            <div className="bg-slate-950 flex items-center justify-center border-b border-slate-200 min-h-[350px]">
-              {scan.imageUrl ? (
-                <img
-                  src={scan.imageUrl}
-                  alt="Liver ultrasound research input"
-                  className="w-full max-h-[500px] object-contain mx-auto"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div className="max-w-sm px-8 text-center text-sm leading-relaxed text-slate-300" id="history-image-not-retained">
-                  Input image not retained. This research record stores model scores, provenance and geometry only.
-                </div>
-              )}
-            </div>
-
-            {/* Technical Metadata panel */}
-            <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50/40 text-xs font-mono">
-              <div>
-                <span className="block text-[10px] uppercase font-bold text-slate-400 mb-0.5">Assigned Clinician</span>
-                <span className="text-slate-700 font-sans font-medium">{scan.doctorName}</span>
-              </div>
-              <div>
-                <span className="block text-[10px] uppercase font-bold text-slate-400 mb-0.5">Clinician ID</span>
-                <span className="text-slate-500 font-mono text-[10px] truncate block" title={scan.doctorId}>{scan.doctorId}</span>
-              </div>
-              <div>
-                <span className="block text-[10px] uppercase font-bold text-slate-400 mb-0.5 flex items-center gap-1">
-                  <Ruler className="h-3 w-3 inline" /> Resolution
-                </span>
-                <span className="text-slate-500 font-mono text-[10px]">{resolutionLabel(scan)}</span>
-              </div>
-              <div>
-                <span className="block text-[10px] uppercase font-bold text-slate-400 mb-0.5">Record ID</span>
-                <span className="text-slate-500 font-mono text-[10px] truncate block" title={scan.id}>{scan.id}</span>
-              </div>
-            </div>
-
-            {/* Versioned inference metadata footer */}
-            {(scan.schemaVersion === 3 || scan.schemaVersion === 4) && (
-              <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/60 flex flex-wrap gap-4 text-[10px] font-mono text-slate-500">
-                {scan.inferenceLatencyMs !== undefined && (
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    Latency: {scan.inferenceLatencyMs} ms
-                  </span>
-                )}
-                {scan.modelVersion && (
-                  <span className="flex items-center gap-1">
-                    <Cpu className="h-3 w-3" />
-                    Model: {scan.modelVersion}
-                  </span>
-                )}
-                {scan.inputMode && (
-                  <span>Mode: {scan.inputMode}</span>
-                )}
+        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(430px,0.9fr)]">
+          <section className="surface-panel overflow-hidden rounded-xl" id="ultrasound-viewer">
+            <div className="border-b border-slate-200 px-5 py-4"><h2 className="text-base font-semibold text-slate-900">Input and record context</h2><p className="mt-1 text-sm text-slate-500">The current privacy setting stores geometry and model output, not image bytes.</p></div>
+            {scan.imageUrl ? (
+              <div className="flex min-h-80 items-center justify-center bg-slate-950"><img src={scan.imageUrl} alt="Stored liver ultrasound research input" className="max-h-[560px] w-full object-contain" referrerPolicy="no-referrer" /></div>
+            ) : (
+              <div id="history-image-not-retained" className="flex min-h-80 flex-col items-center justify-center bg-slate-950 px-8 text-center text-slate-300">
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/5"><ImageOff className="h-5 w-5" /></span>
+                <h3 className="mt-4 text-sm font-semibold text-white">Source image not retained</h3>
+                <p className="mt-2 max-w-sm text-sm leading-6 text-slate-400">The model processed the upload in memory. Reconstructing or displaying that image from this record is not possible.</p>
               </div>
             )}
-          </div>
+            <dl className="grid gap-4 border-t border-slate-200 bg-slate-50 p-5 sm:grid-cols-2 lg:grid-cols-4">
+              <div><dt className="flex items-center gap-1.5 text-xs text-slate-500"><UserRound className="h-3.5 w-3.5" />Reviewer</dt><dd className="mt-1 text-sm font-semibold text-slate-900">{scan.doctorName}</dd></div>
+              <div><dt className="flex items-center gap-1.5 text-xs text-slate-500"><Ruler className="h-3.5 w-3.5" />Input geometry</dt><dd className="mt-1 font-mono text-xs text-slate-800">{scan.imageWidth && scan.imageHeight ? `${scan.imageWidth} × ${scan.imageHeight} px` : 'Unavailable'}</dd></div>
+              <div><dt className="flex items-center gap-1.5 text-xs text-slate-500"><Clock3 className="h-3.5 w-3.5" />Request time</dt><dd className="mt-1 font-mono text-xs text-slate-800">{scan.totalRequestMs?.toFixed(1) ?? scan.inferenceLatencyMs ?? '—'} ms</dd></div>
+              <div><dt className="flex items-center gap-1.5 text-xs text-slate-500"><FileLock2 className="h-3.5 w-3.5" />Record ID</dt><dd className="mt-1 truncate font-mono text-xs text-slate-800" title={scan.id}>{scan.id}</dd></div>
+            </dl>
+          </section>
 
-          {/* Right: research model result */}
-          <div className="lg:col-span-5">
-            <ResultCard scan={scan} />
-          </div>
+          <ResultCard scan={scan} />
         </div>
       )}
     </div>

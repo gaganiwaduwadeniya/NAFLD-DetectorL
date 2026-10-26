@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Upload, X, FileImage, FlaskConical } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { FileImage, ImagePlus, Trash2, UploadCloud } from 'lucide-react';
 
 interface ImageUploaderProps {
   onImageSelected: (file: File | null) => void;
@@ -7,11 +7,11 @@ interface ImageUploaderProps {
 }
 
 export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelected, selectedFile }) => {
-  const [dragActive, setDragActive] = useState<boolean>(false);
+  const [dragActive, setDragActive] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Generate preview when file is selected
   React.useEffect(() => {
     if (!selectedFile) {
       setPreviewUrl(null);
@@ -19,138 +19,76 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelected, s
     }
     const objectUrl = URL.createObjectURL(selectedFile);
     setPreviewUrl(objectUrl);
-
     return () => URL.revokeObjectURL(objectUrl);
   }, [selectedFile]);
 
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
-  };
-
   const validateAndSelectFile = (file: File) => {
     const allowedTypes = ['image/jpeg', 'image/png'];
-    const maxSize = 20 * 1024 * 1024; // 20 MB — matches server enforcement
-
+    const maxSize = 20 * 1024 * 1024;
     if (!allowedTypes.includes(file.type)) {
-      alert('Unsupported file format. Please upload JPG or PNG.');
+      setError('Choose a JPEG or PNG image. Other formats are not accepted.');
       return;
     }
-
     if (file.size > maxSize) {
-      alert('File exceeds the 20 MB limit. Please upload a smaller image.');
+      setError('Choose an image smaller than 20 MB.');
       return;
     }
-
+    setError(null);
     onImageSelected(file);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault();
     setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      validateAndSelectFile(e.dataTransfer.files[0]);
-    }
+    const file = event.dataTransfer.files?.[0];
+    if (file) validateAndSelectFile(file);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    if (e.target.files && e.target.files[0]) {
-      validateAndSelectFile(e.target.files[0]);
-    }
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) validateAndSelectFile(file);
   };
 
-  const onButtonClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleClear = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const clearFile = () => {
     onImageSelected(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    setError(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   return (
-    <div className="w-full" id="image-uploader-wrapper">
-      <input
-        ref={fileInputRef}
-        type="file"
-        id="input-file-upload"
-        className="hidden"
-        accept=".jpg,.jpeg,.png,image/jpeg,image/png"
-        onChange={handleChange}
-      />
+    <div id="image-uploader-wrapper">
+      <input ref={fileInputRef} id="input-file-upload" type="file" className="sr-only" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onChange={handleChange} />
 
       {!previewUrl ? (
         <div
-          onDragEnter={handleDrag}
-          onDragOver={handleDrag}
-          onDragLeave={handleDrag}
-          onDrop={handleDrop}
-          onClick={onButtonClick}
-          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all bg-slate-50/50 min-h-[260px] flex flex-col items-center justify-center ${
-            dragActive
-              ? 'border-blue-500 bg-blue-50/70 scale-[1.01]'
-              : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50'
-          }`}
           id="uploader-dropzone"
+          onDragEnter={(event) => { event.preventDefault(); setDragActive(true); }}
+          onDragOver={(event) => event.preventDefault()}
+          onDragLeave={(event) => { event.preventDefault(); setDragActive(false); }}
+          onDrop={handleDrop}
+          className={`rounded-xl border-2 border-dashed px-6 py-9 text-center transition ${dragActive ? 'border-brand-500 bg-brand-50' : 'border-slate-300 bg-slate-50/70'}`}
         >
-          <div className="flex flex-col items-center justify-center">
-            <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mb-4 border border-blue-100/50 shadow-sm text-blue-500">
-              <Upload className="h-6 w-6 stroke-[2.2]" />
-            </div>
-
-            <h3 className="text-slate-800 font-bold text-sm mb-1">Upload Ultrasound Image</h3>
-            <p className="text-slate-500 text-xs max-w-xs mb-4 leading-relaxed">
-              Drag and drop your liver ultrasound image here or click to browse.
-              JPG or PNG — up to 20 MB.
-            </p>
-
-            {/* Research-only badge */}
-            <div className="flex items-center space-x-1.5 text-[10px] text-violet-700 bg-violet-50 border border-violet-100/60 px-2.5 py-1 rounded-full font-semibold">
-              <FlaskConical className="h-3.5 w-3.5 text-violet-500" />
-              <span>Research Use Only</span>
-            </div>
-          </div>
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white text-brand-700 shadow-sm ring-1 ring-slate-200">
+            <UploadCloud className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <h3 className="mt-4 text-sm font-semibold text-slate-900">Add one ultrasound frame</h3>
+          <p className="mx-auto mt-1 max-w-md text-sm leading-6 text-slate-500">Use a de-identified liver ultrasound screenshot in JPEG or PNG format, up to 20 MB.</p>
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="mt-4 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-brand-300 hover:text-brand-700">
+            <ImagePlus className="h-4 w-4" aria-hidden="true" />Choose image
+          </button>
+          <p className="mt-3 text-xs text-slate-400">or drag and drop it here</p>
         </div>
       ) : (
-        <div className="relative border border-slate-200 rounded-xl overflow-hidden bg-slate-900 shadow-inner group" id="uploader-preview-container">
-          <img
-            src={previewUrl}
-            alt="Ultrasound Preview"
-            className="w-full max-h-[350px] object-contain mx-auto"
-            referrerPolicy="no-referrer"
-          />
-
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-            <div className="flex items-center space-x-2 text-white">
-              <FileImage className="h-4 w-4 text-blue-400" />
-              <span className="text-xs font-mono font-medium truncate max-w-xs">{selectedFile?.name}</span>
-              <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded">
-                {selectedFile ? (selectedFile.size / (1024 * 1024)).toFixed(2) + ' MB' : ''}
-              </span>
-            </div>
+        <div id="uploader-preview-container" className="overflow-hidden rounded-xl border border-slate-300 bg-slate-950">
+          <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-slate-900 px-3 py-2.5 text-white">
+            <div className="flex min-w-0 items-center gap-2"><FileImage className="h-4 w-4 shrink-0 text-cyan-300" /><span className="truncate text-xs font-medium">{selectedFile?.name}</span><span className="shrink-0 text-xs text-slate-400">{selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : ''}</span></div>
+            <button id="btn-remove-image" type="button" onClick={clearFile} className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-300 transition hover:bg-white/10 hover:text-white" aria-label="Remove selected image" title="Remove image"><Trash2 className="h-4 w-4" /></button>
           </div>
-
-          <button
-            onClick={handleClear}
-            className="absolute top-3 right-3 p-2 bg-black/60 hover:bg-red-600 text-white rounded-full transition-colors cursor-pointer"
-            title="Remove Image"
-            id="btn-remove-image"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <img src={previewUrl} alt="Selected ultrasound preview" className="mx-auto max-h-[380px] w-full object-contain" />
         </div>
       )}
+
+      {error && <p className="mt-2 text-sm font-medium text-rose-700" role="alert">{error}</p>}
     </div>
   );
 };

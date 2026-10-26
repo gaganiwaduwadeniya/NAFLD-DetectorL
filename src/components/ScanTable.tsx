@@ -1,12 +1,39 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowDownAZ, ArrowRight, FileSearch, Filter, Search } from 'lucide-react';
 import { Scan } from '../types';
-import { Search, Eye, ArrowUpDown, ChevronRight, CheckCircle, AlertTriangle } from 'lucide-react';
 
 interface ScanTableProps {
   scans: Scan[];
   showPhysicianColumn?: boolean;
 }
+
+const normalisedPrediction = (scan: Scan): 'Normal' | 'Abnormal' => {
+  if (scan.schemaVersion === 4) return (scan.finalStage ?? 0) === 0 ? 'Normal' : 'Abnormal';
+  if (scan.binaryResult === 'NAFLD' || scan.prediction === 'Abnormal') return 'Abnormal';
+  return 'Normal';
+};
+
+const displayLabel = (scan: Scan) => scan.schemaVersion === 4 && scan.finalStageLabel
+  ? scan.finalStageLabel
+  : scan.schemaVersion === 3 && scan.finalLabel
+    ? scan.finalLabel
+    : scan.prediction ?? 'Unknown';
+
+const badgeClass = (scan: Scan) => {
+  const stage = scan.schemaVersion === 4 ? scan.finalStage : undefined;
+  if (stage === 3) return 'border-rose-200 bg-rose-50 text-rose-800';
+  if (stage === 2) return 'border-orange-200 bg-orange-50 text-orange-800';
+  if (stage === 1) return 'border-amber-200 bg-amber-50 text-amber-800';
+  if (normalisedPrediction(scan) === 'Abnormal') return 'border-amber-200 bg-amber-50 text-amber-800';
+  return 'border-emerald-200 bg-emerald-50 text-emerald-800';
+};
+
+const formatDate = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+};
 
 export const ScanTable: React.FC<ScanTableProps> = ({ scans, showPhysicianColumn = false }) => {
   const navigate = useNavigate();
@@ -16,265 +43,99 @@ export const ScanTable: React.FC<ScanTableProps> = ({ scans, showPhysicianColumn
   const [sortBy, setSortBy] = useState<'date' | 'age' | 'confidence'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  // Derive a normalised prediction string for filtering regardless of schema version
-  const normalisedPrediction = (s: Scan): 'Normal' | 'Abnormal' => {
-    if (s.prediction === 'Normal') return 'Normal';
-    if (s.prediction === 'Abnormal') return 'Abnormal';
-    // V3 records: derive from binaryResult
-    if (s.binaryResult === 'Non-NAFLD') return 'Normal';
-    if (s.binaryResult === 'NAFLD') return 'Abnormal';
-    return 'Normal';
-  };
-
-  // Display label shown in the Diagnostic Output column
-  const displayLabel = (s: Scan): string => {
-    if (s.schemaVersion === 4 && s.finalStageLabel) return s.finalStageLabel;
-    if (s.schemaVersion === 3 && s.finalLabel) return s.finalLabel;
-    return s.prediction ?? 'Unknown';
-  };
-
-  const isAbnormalScan = (s: Scan): boolean => normalisedPrediction(s) === 'Abnormal';
-
-  const filteredAndSortedScans = useMemo(() => {
-    let result = [...scans];
-
-    // Search filter
-    if (searchTerm.trim() !== '') {
-      const lowerSearch = searchTerm.toLowerCase();
-      result = result.filter(
-        (s) =>
-          s.patientName.toLowerCase().includes(lowerSearch) ||
-          s.id.toLowerCase().includes(lowerSearch) ||
-          (showPhysicianColumn && s.doctorName.toLowerCase().includes(lowerSearch))
-      );
-    }
-
-    // Prediction filter (works for both V3 and legacy)
-    if (predictionFilter !== 'All') {
-      result = result.filter((s) => normalisedPrediction(s) === predictionFilter);
-    }
-
-    // Gender filter
-    if (genderFilter !== 'All') {
-      result = result.filter((s) => s.patientGender === genderFilter);
-    }
-
-    // Sort
-    result.sort((a, b) => {
-      let comparison = 0;
-      if (sortBy === 'date') {
-        comparison = new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
-      } else if (sortBy === 'age') {
-        comparison = a.patientAge - b.patientAge;
-      } else if (sortBy === 'confidence') {
-        comparison = (a.confidence ?? 0) - (b.confidence ?? 0);
-      }
-      return sortOrder === 'desc' ? -comparison : comparison;
-    });
-
-    return result;
+  const filteredScans = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    return [...scans]
+      .filter((scan) => !query || scan.patientName.toLowerCase().includes(query) || scan.id.toLowerCase().includes(query) || (showPhysicianColumn && scan.doctorName.toLowerCase().includes(query)))
+      .filter((scan) => predictionFilter === 'All' || normalisedPrediction(scan) === predictionFilter)
+      .filter((scan) => genderFilter === 'All' || scan.patientGender === genderFilter)
+      .sort((a, b) => {
+        const comparison = sortBy === 'date'
+          ? new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          : sortBy === 'age'
+            ? a.patientAge - b.patientAge
+            : (a.confidence ?? 0) - (b.confidence ?? 0);
+        return sortOrder === 'desc' ? -comparison : comparison;
+      });
   }, [scans, searchTerm, predictionFilter, genderFilter, sortBy, sortOrder, showPhysicianColumn]);
 
-  const toggleSort = (field: 'date' | 'age' | 'confidence') => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
+  const updateSort = (field: typeof sortBy) => {
+    if (field === sortBy) setSortOrder((current) => current === 'asc' ? 'desc' : 'asc');
+    else {
       setSortBy(field);
       setSortOrder('desc');
     }
   };
 
-  const formatDate = (isoStr: string) => {
-    try {
-      const date = new Date(isoStr);
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch (e) {
-      return isoStr;
-    }
-  };
-
-  // Confidence/prob display string: V3 shows "X% prob", legacy shows "X% conf"
-  const probDisplay = (s: Scan): string => {
-    if (s.confidence === undefined || s.confidence === null) return '';
-    const suffix = s.schemaVersion === 3 || s.schemaVersion === 4 ? 'score' : 'conf';
-    return `(${s.confidence.toFixed(1)}% ${suffix})`;
+  const filtersActive = Boolean(searchTerm || predictionFilter !== 'All' || genderFilter !== 'All');
+  const clearFilters = () => {
+    setSearchTerm('');
+    setPredictionFilter('All');
+    setGenderFilter('All');
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden" id="scan-table-container">
-      {/* Table Action Controls */}
-      <div className="p-5 border-b border-slate-200 bg-slate-50/50 space-y-4 sm:space-y-0 sm:flex sm:items-center sm:justify-between">
-        {/* Search Input */}
-        <div className="relative max-w-sm w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
-          <input
-            type="text"
-            placeholder="Search by Patient Name, ID or Doctor..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
-            id="input-table-search"
-          />
-        </div>
-
-        {/* Filter Badges */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Prediction Dropdown */}
-          <div className="flex items-center space-x-1.5">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Classification:</span>
-            <select
-              value={predictionFilter}
-              onChange={(e) => setPredictionFilter(e.target.value as any)}
-              className="px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              id="select-filter-prediction"
-            >
-              <option value="All">All Outputs</option>
-              <option value="Normal">Non-NAFLD / Normal</option>
-              <option value="Abnormal">NAFLD / Abnormal</option>
-            </select>
-          </div>
-
-          {/* Gender Dropdown */}
-          <div className="flex items-center space-x-1.5">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Gender:</span>
-            <select
-              value={genderFilter}
-              onChange={(e) => setGenderFilter(e.target.value as any)}
-              className="px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              id="select-filter-gender"
-            >
-              <option value="All">All Genders</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
+    <section className="surface-panel overflow-hidden rounded-xl" id="scan-table-container" aria-label="Research records">
+      <div className="border-b border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+        <div className="grid gap-3 lg:grid-cols-[minmax(240px,1fr)_auto_auto]">
+          <label className="relative block">
+            <span className="sr-only">Search records</span>
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+            <input id="input-table-search" type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="field-control pl-10" placeholder={showPhysicianColumn ? 'Search case, record ID, or reviewer' : 'Search case alias or record ID'} />
+          </label>
+          <label className="flex items-center gap-2"><Filter className="h-4 w-4 text-slate-400" /><span className="sr-only">Classification filter</span><select id="select-filter-prediction" value={predictionFilter} onChange={(event) => setPredictionFilter(event.target.value as any)} className="field-control min-w-44"><option value="All">All classifications</option><option value="Normal">Non-NAFLD</option><option value="Abnormal">NAFLD stages</option></select></label>
+          <label><span className="sr-only">Sex filter</span><select id="select-filter-gender" value={genderFilter} onChange={(event) => setGenderFilter(event.target.value as any)} className="field-control min-w-36"><option value="All">All sexes</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></label>
         </div>
       </div>
 
-      {/* Data Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse" id="scans-data-table">
-          <thead>
-            <tr className="border-b border-slate-200 bg-slate-50 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
-              <th className="py-3 px-5">Patient</th>
-              <th className="py-3 px-5 cursor-pointer hover:bg-slate-50" onClick={() => toggleSort('age')}>
-                <div className="flex items-center space-x-1">
-                  <span>Demographics</span>
-                  <ArrowUpDown className="h-3 w-3 text-slate-400" />
-                </div>
-              </th>
-              {showPhysicianColumn && <th className="py-3 px-5">Clinician</th>}
-              <th className="py-3 px-5 cursor-pointer hover:bg-slate-50" onClick={() => toggleSort('date')}>
-                <div className="flex items-center space-x-1">
-                  <span>Scan Date</span>
-                  <ArrowUpDown className="h-3 w-3 text-slate-400" />
-                </div>
-              </th>
-              <th className="py-3 px-5 cursor-pointer hover:bg-slate-50" onClick={() => toggleSort('confidence')}>
-                <div className="flex items-center space-x-1">
-                  <span>Research Model Output</span>
-                  <ArrowUpDown className="h-3 w-3 text-slate-400" />
-                </div>
-              </th>
-              <th className="py-3 px-5 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200 text-sm">
-            {filteredAndSortedScans.length > 0 ? (
-              filteredAndSortedScans.map((scan) => (
-                <tr
-                  key={scan.id}
-                  onClick={() => navigate(`/scan/${scan.id}`)}
-                  className="hover:bg-slate-50/70 transition-colors cursor-pointer group"
-                >
-                  {/* Patient Name & Scan ID */}
-                  <td className="py-3.5 px-5">
-                    <div className="font-sans font-semibold text-slate-800">{scan.patientName}</div>
-                    <div className="font-mono text-[10px] text-slate-400 uppercase tracking-tight">ID: {scan.id}</div>
-                  </td>
-
-                  {/* Patient Age & Gender */}
-                  <td className="py-3.5 px-5">
-                    <div className="text-slate-700">{scan.patientAge} yrs</div>
-                    <div className="text-slate-400 text-xs">{scan.patientGender}</div>
-                  </td>
-
-                  {/* Consulting Doctor if admin */}
-                  {showPhysicianColumn && (
-                    <td className="py-3.5 px-5">
-                      <div className="font-medium text-slate-700">{scan.doctorName}</div>
-                      <div className="text-[10px] text-slate-400">ID: {scan.doctorId}</div>
-                    </td>
-                  )}
-
-                  {/* Scan Date & Time */}
-                  <td className="py-3.5 px-5 text-slate-600">
-                    <div>{formatDate(scan.timestamp).split(',')[0]}</div>
-                    <div className="text-slate-400 text-xs">{formatDate(scan.timestamp).split(',')[1]}</div>
-                  </td>
-
-                  {/* Diagnostic Label & probability */}
-                  <td className="py-3.5 px-5">
-                    <div className="flex items-center space-x-2">
-                      {isAbnormalScan(scan) ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-50 text-red-700 border border-red-100/40">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          {displayLabel(scan)}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100/40">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          {displayLabel(scan)}
-                        </span>
-                      )}
-                      {scan.confidence !== undefined && (
-                        <span className="text-xs font-semibold text-slate-500 font-mono">
-                          {probDisplay(scan)}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-
-                  {/* Row Action */}
-                  <td className="py-3.5 px-5 text-right">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/scan/${scan.id}`);
-                      }}
-                      className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </td>
+      {filteredScans.length === 0 ? (
+        <div className="px-6 py-16 text-center">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500"><FileSearch className="h-5 w-5" /></span>
+          <h3 className="mt-4 text-base font-semibold text-slate-900">{scans.length === 0 ? 'No research records yet' : 'No records match these filters'}</h3>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">{scans.length === 0 ? 'Run a new analysis to create the first local record. Source image bytes will remain unretained in the current configuration.' : 'Clear the filters or try a different case alias or record ID.'}</p>
+          <button type="button" onClick={scans.length === 0 ? () => navigate('/') : clearFilters} className="mt-5 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:border-brand-300 hover:text-brand-700">{scans.length === 0 ? 'Start an analysis' : 'Clear filters'}<ArrowRight className="h-4 w-4" /></button>
+        </div>
+      ) : (
+        <>
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full text-left" id="scans-data-table">
+              <thead className="border-b border-slate-200 bg-white text-xs font-semibold text-slate-500">
+                <tr>
+                  <th className="px-5 py-3.5">Case</th>
+                  <th className="px-5 py-3.5"><button type="button" onClick={() => updateSort('age')} className="flex items-center gap-1 hover:text-slate-900">Age / sex<ArrowDownAZ className="h-3.5 w-3.5" /></button></th>
+                  {showPhysicianColumn && <th className="px-5 py-3.5">Reviewer</th>}
+                  <th className="px-5 py-3.5"><button type="button" onClick={() => updateSort('date')} className="flex items-center gap-1 hover:text-slate-900">Created<ArrowDownAZ className="h-3.5 w-3.5" /></button></th>
+                  <th className="px-5 py-3.5">Model output</th>
+                  <th className="px-5 py-3.5 text-right"><span className="sr-only">Open record</span></th>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={showPhysicianColumn ? 6 : 5} className="py-12 text-center text-slate-400 font-sans">
-                  <div className="max-w-xs mx-auto space-y-2">
-                    <p className="text-sm font-semibold text-slate-600">No Scans Found</p>
-                    <p className="text-xs text-slate-400">Try adjusting search or filter criteria.</p>
-                  </div>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredScans.map((scan) => (
+                  <tr key={scan.id} onClick={() => navigate(`/scan/${scan.id}`)} className="cursor-pointer transition hover:bg-brand-50/50">
+                    <td className="px-5 py-4"><strong className="block text-sm font-semibold text-slate-900">{scan.patientName}</strong><span className="mt-0.5 block max-w-48 truncate font-mono text-[11px] text-slate-400">{scan.id}</span></td>
+                    <td className="px-5 py-4 text-sm text-slate-600">{scan.patientAge} / {scan.patientGender}</td>
+                    {showPhysicianColumn && <td className="px-5 py-4 text-sm text-slate-600">{scan.doctorName}</td>}
+                    <td className="px-5 py-4 text-sm text-slate-600">{formatDate(scan.timestamp)}</td>
+                    <td className="px-5 py-4"><span className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-semibold ${badgeClass(scan)}`}>{displayLabel(scan)}</span></td>
+                    <td className="px-5 py-4 text-right"><button type="button" onClick={(event) => { event.stopPropagation(); navigate(`/scan/${scan.id}`); }} className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-white hover:text-brand-700" aria-label={`Open ${scan.patientName} record`}><ArrowRight className="h-4 w-4" /></button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-      {/* Table Footer */}
-      <div className="p-4 bg-slate-50/50 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500">
-        <span>Showing {filteredAndSortedScans.length} of {scans.length} total records</span>
-        <span className="font-mono">Versioned research records</span>
-      </div>
-    </div>
+          <div className="divide-y divide-slate-100 md:hidden">
+            {filteredScans.map((scan) => (
+              <button key={scan.id} type="button" onClick={() => navigate(`/scan/${scan.id}`)} className="block w-full p-4 text-left transition hover:bg-brand-50/50">
+                <div className="flex items-start justify-between gap-3"><div className="min-w-0"><strong className="block truncate text-sm font-semibold text-slate-900">{scan.patientName}</strong><span className="mt-0.5 block truncate font-mono text-[11px] text-slate-400">{scan.id}</span></div><span className={`shrink-0 rounded-md border px-2 py-1 text-xs font-semibold ${badgeClass(scan)}`}>{displayLabel(scan)}</span></div>
+                <div className="mt-3 flex items-center justify-between text-xs text-slate-500"><span>{scan.patientAge} / {scan.patientGender}</span><span>{formatDate(scan.timestamp)}</span></div>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      <footer className="flex items-center justify-between border-t border-slate-200 bg-slate-50/70 px-4 py-3 text-xs text-slate-500 sm:px-5"><span>{filteredScans.length} of {scans.length} records</span>{filtersActive && <button type="button" onClick={clearFilters} className="font-semibold text-brand-700 hover:text-brand-600">Clear filters</button>}</footer>
+    </section>
   );
 };

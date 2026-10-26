@@ -1,12 +1,37 @@
-import React from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Activity, LogOut, User as UserIcon, Calendar, ClipboardList, Shield, UploadCloud } from 'lucide-react';
+import { Activity, ClipboardList, FlaskConical, LayoutDashboard, LogOut, UploadCloud } from 'lucide-react';
+
+type ModelState = 'checking' | 'ready' | 'offline';
 
 export const Navbar: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, getAuthHeaders } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [modelState, setModelState] = useState<ModelState>('checking');
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+
+    const checkHealth = async () => {
+      try {
+        const response = await fetch('/api/model/health', { headers: getAuthHeaders() });
+        const data = await response.json();
+        if (active) setModelState(response.ok && data.ready === true ? 'ready' : 'offline');
+      } catch {
+        if (active) setModelState('offline');
+      }
+    };
+
+    checkHealth();
+    const timer = window.setInterval(checkHealth, 30_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [user]);
 
   if (!user) return null;
 
@@ -15,110 +40,109 @@ export const Navbar: React.FC = () => {
     navigate('/login');
   };
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => path === '/'
+    ? location.pathname === '/'
+    : location.pathname.startsWith(path);
+
+  const navItems = user.role === 'doctor'
+    ? [
+        { to: '/', label: 'New analysis', icon: UploadCloud },
+        { to: '/history', label: 'Records', icon: ClipboardList },
+      ]
+    : [{ to: '/', label: 'Overview', icon: LayoutDashboard }];
+
+  const healthLabel = modelState === 'ready' ? 'Model ready' : modelState === 'offline' ? 'Model unavailable' : 'Checking model';
 
   return (
-    <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm" id="main-header">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          {/* Logo */}
-          <div className="flex items-center space-x-3">
-            <Link to="/" className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white shadow-sm">
-                <Activity className="h-4 w-4 stroke-[2.5]" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-sans font-bold text-slate-900 tracking-tight text-lg block leading-tight">
-                  LIVER-AI
-                </span>
-                <span className="font-mono text-[9px] text-blue-600 tracking-wider uppercase font-semibold block">
-                  NAFLD DIAGNOSTICS
-                </span>
-              </div>
-            </Link>
-          </div>
+    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur" id="main-header">
+      <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <Link to="/" className="flex min-w-0 items-center gap-3 rounded-md" aria-label="NAFLD research console home">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-ink-950 text-cyan-200 shadow-sm">
+            <Activity className="h-4.5 w-4.5" aria-hidden="true" />
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-bold tracking-tight text-ink-950 sm:text-base">NAFLD Research</span>
+            <span className="hidden text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-700 sm:block">Ultrasound model console</span>
+          </span>
+        </Link>
 
-          {/* Navigation Links */}
-          <nav className="hidden md:flex space-x-2" id="nav-menu">
-            {user.role === 'doctor' && (
-              <>
-                <Link
-                  to="/"
-                  className={`px-3 py-2 rounded-md text-xs font-semibold transition-colors flex items-center space-x-1.5 ${
-                    isActive('/') || isActive('/upload')
-                      ? 'bg-blue-600/10 text-blue-600 border border-blue-500/20'
-                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-                  }`}
-                  id="nav-link-diagnostic"
-                >
-                  <UploadCloud className="h-4 w-4" />
-                  <span>Diagnostic Desk</span>
-                </Link>
-                <Link
-                  to="/history"
-                  className={`px-3 py-2 rounded-md text-xs font-semibold transition-colors flex items-center space-x-1.5 ${
-                    isActive('/history')
-                      ? 'bg-blue-600/10 text-blue-600 border border-blue-500/20'
-                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-                  }`}
-                  id="nav-link-scans"
-                >
-                  <ClipboardList className="h-4 w-4" />
-                  <span>Patient Scans</span>
-                </Link>
-              </>
-            )}
-
-            {user.role === 'admin' && (
-              <Link
-                to="/"
-                className={`px-3 py-2 rounded-md text-xs font-semibold transition-colors flex items-center space-x-1.5 ${
-                  isActive('/') || isActive('/admin')
-                    ? 'bg-blue-600/10 text-blue-600 border border-blue-500/20'
-                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-                }`}
-                id="nav-link-admin"
-              >
-                <Shield className="h-4 w-4" />
-                <span>Admin Dashboard</span>
-              </Link>
-            )}
-          </nav>
-
-          {/* User Info & Status Badge */}
-          <div className="flex items-center space-x-4">
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 border border-green-100 rounded-full text-[11px] font-semibold">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> 
-              ML Service Online
-            </div>
-
-            <div className="w-px h-6 bg-slate-200 hidden lg:block"></div>
-
-            <div className="flex items-center space-x-3 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
-              <div className="h-7 w-7 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-xs">
-                {user.name.charAt(0).toUpperCase()}
-              </div>
-              <div className="text-left hidden sm:block">
-                <span className="block text-xs font-semibold text-slate-800 leading-none">
-                  {user.name}
-                </span>
-                <span className="block text-[9px] text-slate-500 font-medium leading-none mt-0.5">
-                  {user.role === 'admin' ? 'System Administrator' : 'Senior Hepatologist'}
-                </span>
-              </div>
-            </div>
-
-            <button
-              onClick={handleLogout}
-              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-              title="Logout System"
-              id="btn-logout"
+        <nav className="hidden items-center gap-1 rounded-lg bg-slate-100 p-1 md:flex" aria-label="Primary navigation" id="nav-menu">
+          {navItems.map(({ to, label, icon: Icon }) => (
+            <Link
+              key={to}
+              to={to}
+              className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition ${
+                isActive(to)
+                  ? 'bg-white text-ink-950 shadow-sm'
+                  : 'text-slate-600 hover:bg-white/70 hover:text-slate-900'
+              }`}
             >
-              <LogOut className="h-5 w-5" />
-            </button>
+              <Icon className="h-4 w-4" aria-hidden="true" />
+              {label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div
+            className={`hidden items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold lg:flex ${
+              modelState === 'ready'
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                : modelState === 'offline'
+                  ? 'border-rose-200 bg-rose-50 text-rose-800'
+                  : 'border-slate-200 bg-slate-50 text-slate-600'
+            }`}
+            role="status"
+            aria-live="polite"
+          >
+            <span className={`h-2 w-2 rounded-full ${modelState === 'ready' ? 'bg-emerald-500' : modelState === 'offline' ? 'bg-rose-500' : 'bg-slate-400'}`} />
+            {healthLabel}
           </div>
+
+          <div className="flex items-center gap-2 border-l border-slate-200 pl-3">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-700" aria-hidden="true">
+              {user.name.charAt(0).toUpperCase()}
+            </span>
+            <span className="hidden max-w-36 sm:block">
+              <span className="block truncate text-xs font-semibold text-slate-800">{user.name}</span>
+              <span className="block text-[11px] capitalize text-slate-500">{user.role}</span>
+            </span>
+          </div>
+
+          <button
+            onClick={handleLogout}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+            title="Sign out"
+            aria-label="Sign out"
+            id="btn-logout"
+          >
+            <LogOut className="h-4 w-4" aria-hidden="true" />
+          </button>
         </div>
       </div>
+
+      <div className="border-t border-slate-100 px-4 py-2 md:hidden">
+        <nav className="mx-auto flex max-w-md gap-2" aria-label="Mobile navigation">
+          {navItems.map(({ to, label, icon: Icon }) => (
+            <Link
+              key={to}
+              to={to}
+              className={`flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg text-sm font-semibold ${
+                isActive(to) ? 'bg-brand-50 text-brand-700' : 'text-slate-600'
+              }`}
+            >
+              <Icon className="h-4 w-4" aria-hidden="true" />
+              {label}
+            </Link>
+          ))}
+        </nav>
+      </div>
+
+      {modelState === 'offline' && (
+        <div className="border-t border-rose-200 bg-rose-50 px-4 py-2 text-center text-xs font-medium text-rose-800" role="alert">
+          The selected inference service is unavailable. New analyses are temporarily disabled.
+        </div>
+      )}
     </header>
   );
 };

@@ -1,24 +1,55 @@
 import React, { useEffect, useState } from 'react';
+import { Activity, ArrowRight, CheckCircle2, FileSearch, FlaskConical, ImageOff, Info, RefreshCw, ShieldAlert, Sparkles, WifiOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ImageUploader } from '../components/ImageUploader';
 import { ResultCard } from '../components/ResultCard';
 import { Scan } from '../types';
-import {
-  Upload, User, Clipboard, Calendar, FileText,
-  Activity, ShieldAlert, CheckCircle2, RefreshCw,
-  WifiOff, Sparkles
-} from 'lucide-react';
+
+const ModelFlowPrimer = () => (
+  <section className="surface-panel rounded-xl p-5 sm:p-6" aria-labelledby="model-flow-title">
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <p className="eyebrow">Output structure</p>
+        <h2 id="model-flow-title" className="mt-1 text-xl font-semibold text-ink-950">One gate, then conditional grading</h2>
+      </div>
+      <FlaskConical className="h-5 w-5 shrink-0 text-brand-600" aria-hidden="true" />
+    </div>
+
+    <div className="mt-6 space-y-3">
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <div className="flex gap-3">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-ink-950 text-xs font-bold text-white">1</span>
+          <div><h3 className="text-sm font-semibold text-slate-900">DenseNet121 gate</h3><p className="mt-1 text-sm leading-5 text-slate-600">Five fold models are averaged to choose Non-NAFLD or NAFLD at the locked 0.5 threshold.</p></div>
+        </div>
+      </div>
+      <div className="ml-3 h-4 border-l-2 border-dashed border-slate-300" aria-hidden="true" />
+      <div className="rounded-lg border border-brand-200 bg-brand-50 p-4">
+        <div className="flex gap-3">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-brand-700 text-xs font-bold text-white">2</span>
+          <div><h3 className="text-sm font-semibold text-slate-900">EfficientNet-B0 grade</h3><p className="mt-1 text-sm leading-5 text-slate-600">Only a positive NAFLD gate continues to conditional Mild, Moderate, or Severe grading.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div className="mt-5 grid grid-cols-3 gap-2" aria-label="Possible NAFLD grade outputs">
+      <div className="rounded-md bg-amber-50 px-2 py-2 text-center text-xs font-semibold text-amber-800">Mild</div>
+      <div className="rounded-md bg-orange-50 px-2 py-2 text-center text-xs font-semibold text-orange-800">Moderate</div>
+      <div className="rounded-md bg-rose-50 px-2 py-2 text-center text-xs font-semibold text-rose-800">Severe</div>
+    </div>
+
+    <div className="mt-5 flex gap-3 border-t border-slate-200 pt-5 text-sm leading-5 text-slate-600">
+      <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" aria-hidden="true" />
+      <p>Scores are model outputs, not calibrated clinical probabilities. A single screenshot does not represent a complete ultrasound examination.</p>
+    </div>
+  </section>
+);
 
 export const DoctorDashboard: React.FC = () => {
   const { getAuthHeaders } = useAuth();
-
-  // Patient demographics state
   const [patientName, setPatientName] = useState('');
   const [patientAge, setPatientAge] = useState('');
   const [patientGender, setPatientGender] = useState<'Male' | 'Female' | 'Other'>('Male');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
-  // Status & output state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isModelUnavailable, setIsModelUnavailable] = useState(false);
@@ -32,56 +63,33 @@ export const DoctorDashboard: React.FC = () => {
     if (explanationUrl) URL.revokeObjectURL(explanationUrl);
   }, [explanationUrl]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setError(null);
     setIsModelUnavailable(false);
-
-    if (!selectedFile) {
-      setError('Please upload an ultrasound image before continuing.');
-      return;
-    }
-
-    if (!patientName.trim()) {
-      setError('Please provide the patient name.');
-      return;
-    }
-
-    if (!patientAge || isNaN(Number(patientAge)) || Number(patientAge) <= 0) {
-      setError('Please enter a valid age.');
-      return;
-    }
+    if (!selectedFile) return setError('Add one ultrasound image before running the model.');
+    if (!patientName.trim()) return setError('Enter a de-identified research case name.');
+    if (!patientAge || Number.isNaN(Number(patientAge)) || Number(patientAge) <= 0 || Number(patientAge) > 120) return setError('Enter an age between 1 and 120.');
 
     setLoading(true);
-
     try {
       const formData = new FormData();
       formData.append('image', selectedFile);
       formData.append('patientName', patientName.trim());
       formData.append('patientAge', patientAge);
       formData.append('patientGender', patientGender);
-
-      const headers = getAuthHeaders();
-      const res = await fetch('/api/predict', {
-        method: 'POST',
-        headers: { ...headers },
-        body: formData,
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        // 503 means the ML service is down — surface a specific banner
-        if (res.status === 503) {
+      const response = await fetch('/api/predict', { method: 'POST', headers: getAuthHeaders(), body: formData });
+      const data = await response.json();
+      if (!response.ok) {
+        if (response.status === 503) {
           setIsModelUnavailable(true);
           return;
         }
-        throw new Error(data.error || 'Prediction request failed.');
+        throw new Error(data.error || 'The analysis request could not be completed.');
       }
-
       setScanResult(data);
     } catch (err: any) {
-      setError(err.message || 'An unexpected server error occurred.');
+      setError(err.message || 'The analysis request could not be completed.');
     } finally {
       setLoading(false);
     }
@@ -125,228 +133,69 @@ export const DoctorDashboard: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="doctor-dashboard">
-      <div className="space-y-2 mb-8">
-        <h1 className="font-sans font-extrabold text-slate-900 tracking-tight text-3xl">
-          Liver Ultrasound Analysis
-        </h1>
-        <p className="text-sm text-slate-500">
-          Upload one liver ultrasound frame and enter research-case metadata to run the locked NAFLD research cascade.
-          For research use only — results are not for clinical diagnosis.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Form and Upload Inputs */}
-        <div className="lg:col-span-7 space-y-6">
-          <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6" id="diagnostic-form">
-            <h2 className="text-base font-bold text-slate-800 flex items-center space-x-2">
-              <Clipboard className="h-5 w-5 text-blue-600" />
-              <span>Patient Details</span>
-            </h2>
-
-            {/* Model unavailable banner */}
-            {isModelUnavailable && (
-              <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-start space-x-3 text-amber-800 text-xs" id="model-unavailable-banner">
-                <WifiOff className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-bold block mb-0.5">Inference Service Unavailable</span>
-                  <span>
-                    The model service is not reachable. Ensure the selected inference service is running and
-                    <code className="mx-1 px-1 bg-amber-100 rounded font-mono">ML_SERVICE_URL</code>
-                    is set correctly, then try again.
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Validation error alert */}
-            {error && (
-              <div className="bg-red-50 border border-red-100/50 p-4 rounded-xl flex items-start space-x-3 text-red-800 text-xs" id="form-error-banner">
-                <ShieldAlert className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-bold block">Error</span>
-                  <span>{error}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Demographics row */}
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
-              {/* Patient Name */}
-              <div className="sm:col-span-6 space-y-1.5">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-                  Research Case Name
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
-                  <input
-                    type="text"
-                    required
-                    value={patientName}
-                    disabled={loading || !!scanResult}
-                    onChange={(e) => setPatientName(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white disabled:bg-slate-50 disabled:text-slate-500"
-                    placeholder="E.g. Research Case A"
-                    id="patient-name"
-                  />
-                </div>
-              </div>
-
-              {/* Patient Age */}
-              <div className="sm:col-span-3 space-y-1.5">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-                  Age
-                </label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
-                  <input
-                    type="number"
-                    required
-                    min="1"
-                    max="120"
-                    value={patientAge}
-                    disabled={loading || !!scanResult}
-                    onChange={(e) => setPatientAge(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white disabled:bg-slate-50 disabled:text-slate-500"
-                    placeholder="Yrs"
-                    id="patient-age"
-                  />
-                </div>
-              </div>
-
-              {/* Patient Gender */}
-              <div className="sm:col-span-3 space-y-1.5">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-                  Sex
-                </label>
-                <select
-                  value={patientGender}
-                  disabled={loading || !!scanResult}
-                  onChange={(e) => setPatientGender(e.target.value as any)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white disabled:bg-slate-50 disabled:text-slate-500"
-                  id="patient-gender"
-                >
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Ultrasound Upload */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-                Ultrasound Image
-              </label>
-              {scanResult?.imageUrl ? (
-                <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-950 max-h-[350px]">
-                  <img
-                    src={scanResult.imageUrl}
-                    alt="Analysed ultrasound scan"
-                    className="w-full max-h-[350px] object-contain mx-auto"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-              ) : scanResult ? (
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-xs leading-relaxed text-slate-600" id="image-not-retained-notice">
-                  The uploaded image was processed in memory and was not retained in the research history record.
-                </div>
-              ) : (
-                <ImageUploader selectedFile={selectedFile} onImageSelected={setSelectedFile} />
-              )}
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex space-x-3 pt-2">
-              {scanResult ? (
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm rounded-xl transition-all flex items-center justify-center space-x-2 cursor-pointer"
-                  id="btn-reset-diagnostic"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  <span>New Analysis</span>
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={loading || !selectedFile || !patientName.trim()}
-                  className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-all shadow-sm flex items-center justify-center space-x-2 disabled:bg-blue-300 disabled:cursor-not-allowed cursor-pointer"
-                  id="btn-submit-diagnostic"
-                >
-                  {loading ? (
-                    <>
-                      <Activity className="h-4 w-4 animate-spin text-white" />
-                      <span>Running model…</span>
-                    </>
-                  ) : (
-                    <>
-                      <Activity className="h-4 w-4" />
-                      <span>Run Research Analysis</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-          </form>
+    <div className="mx-auto w-full max-w-[1440px] px-4 py-7 sm:px-6 sm:py-9 lg:px-8" id="doctor-dashboard">
+      <header className="mb-7 flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="eyebrow">New analysis</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-ink-950 sm:text-3xl">Classify a liver ultrasound frame</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Enter de-identified case information, add one permitted image, and review the two-stage research output.</p>
         </div>
+        <span className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700"><FlaskConical className="h-3.5 w-3.5" />Research use only</span>
+      </header>
 
-        {/* Right Column: Result Output */}
-        <div className="lg:col-span-5">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.02fr)_minmax(420px,0.98fr)]">
+        <form onSubmit={handleSubmit} className="surface-panel overflow-hidden rounded-xl" id="diagnostic-form" aria-busy={loading}>
+          <div className="border-b border-slate-200 px-5 py-4 sm:px-6">
+            <h2 className="text-base font-semibold text-ink-950">Analysis input</h2>
+            <p className="mt-1 text-sm text-slate-500">Required fields are marked below. Do not enter direct identifiers.</p>
+          </div>
+
+          <div className="space-y-7 p-5 sm:p-6">
+            {isModelUnavailable && <div id="model-unavailable-banner" className="flex gap-3 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900" role="alert"><WifiOff className="mt-0.5 h-4 w-4 shrink-0" /><div><strong className="block">Model service unavailable</strong><span>The request was not saved. Check the local inference service and try again.</span></div></div>}
+            {error && <div id="form-error-banner" className="flex gap-3 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900" role="alert"><ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" /><div><strong className="block">Review the input</strong><span>{error}</span></div></div>}
+
+            <section aria-labelledby="case-details-title">
+              <div className="mb-4 flex items-center gap-3"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-ink-950 text-xs font-bold text-white">1</span><div><h3 id="case-details-title" className="text-sm font-semibold text-slate-900">Case details</h3><p className="text-xs text-slate-500">Use a study alias rather than a patient name.</p></div></div>
+              <div className="grid gap-4 sm:grid-cols-12">
+                <div className="sm:col-span-6"><label className="field-label" htmlFor="patient-name">Research case alias <span className="text-rose-600">*</span></label><input id="patient-name" type="text" required autoComplete="off" value={patientName} disabled={loading || !!scanResult} onChange={(e) => setPatientName(e.target.value)} className="field-control" placeholder="e.g. Review case 001" /></div>
+                <div className="sm:col-span-3"><label className="field-label" htmlFor="patient-age">Age <span className="text-rose-600">*</span></label><input id="patient-age" type="number" required min="1" max="120" value={patientAge} disabled={loading || !!scanResult} onChange={(e) => setPatientAge(e.target.value)} className="field-control" placeholder="Years" /></div>
+                <div className="sm:col-span-3"><label className="field-label" htmlFor="patient-gender">Sex</label><select id="patient-gender" value={patientGender} disabled={loading || !!scanResult} onChange={(e) => setPatientGender(e.target.value as any)} className="field-control"><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
+              </div>
+            </section>
+
+            <section aria-labelledby="image-input-title">
+              <div className="mb-4 flex items-center gap-3"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-ink-950 text-xs font-bold text-white">2</span><div><h3 id="image-input-title" className="text-sm font-semibold text-slate-900">Ultrasound input</h3><p className="text-xs text-slate-500">JPEG or PNG; processed in memory and not retained.</p></div></div>
+              {scanResult ? <div id="image-not-retained-notice" className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600"><ImageOff className="mt-0.5 h-4 w-4 shrink-0" /><span>The source image was processed in memory and is not stored in this record.</span></div> : <ImageUploader selectedFile={selectedFile} onImageSelected={setSelectedFile} />}
+            </section>
+
+            {scanResult ? (
+              <button type="button" onClick={handleReset} id="btn-reset-diagnostic" className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 transition hover:border-brand-300 hover:text-brand-700"><RefreshCw className="h-4 w-4" />Start another analysis</button>
+            ) : (
+              <button type="submit" id="btn-submit-diagnostic" disabled={loading || !selectedFile || !patientName.trim()} className="flex w-full items-center justify-center gap-2 rounded-lg bg-ink-950 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300">
+                {loading ? <><Activity className="h-4 w-4 animate-spin" /><span>Running 10-member cascade…</span></> : <><span>Run research analysis</span><ArrowRight className="h-4 w-4" /></>}
+              </button>
+            )}
+            {loading && <p className="text-center text-xs text-slate-500" role="status" aria-live="polite">CPU inference can take several seconds. Keep this page open.</p>}
+          </div>
+        </form>
+
+        <div className="space-y-4">
           {scanResult ? (
-            <div className="space-y-4 animate-fade-in" id="diagnosis-result-display">
+            <div id="diagnosis-result-display" className="space-y-4">
               <ResultCard scan={scanResult} />
-
               {scanResult.schemaVersion === 4 && scanResult.explanationAvailable && (
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" id="gradcam-panel">
-                  <button
-                    type="button"
-                    onClick={handleExplain}
-                    disabled={explanationLoading}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-violet-700 disabled:bg-violet-300"
-                    id="btn-generate-gradcam"
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    <span>{explanationLoading ? 'Generating verified Grad-CAM…' : 'Generate qualitative Grad-CAM'}</span>
-                  </button>
-                  {explanationError && <p className="mt-3 text-xs text-red-700">{explanationError}</p>}
-                  {explanationUrl && (
-                    <div className="mt-4 space-y-2">
-                      <img src={explanationUrl} alt="Qualitative Grad-CAM overlay" className="w-full rounded-xl border border-slate-200" id="gradcam-image" />
-                      <p className="text-[11px] leading-relaxed text-slate-500">Qualitative explanation from member 0 of the selected ensemble. It does not prove medical reasoning and must not be used as a segmentation.</p>
-                      {explanationMeta && <details className="text-[10px] text-slate-500"><summary className="cursor-pointer font-semibold">Explanation provenance</summary><code className="mt-2 block break-all rounded bg-slate-50 p-2">{explanationMeta}</code></details>}
-                    </div>
-                  )}
-                </div>
+                <section id="gradcam-panel" className="surface-panel rounded-xl p-5">
+                  <div className="flex items-start justify-between gap-4"><div><h2 className="text-sm font-semibold text-slate-900">Qualitative attention map</h2><p className="mt-1 text-xs leading-5 text-slate-500">Generated from one selected ensemble member. This is not segmentation or proof of model reasoning.</p></div><Sparkles className="h-4 w-4 shrink-0 text-brand-600" /></div>
+                  <button id="btn-generate-gradcam" type="button" onClick={handleExplain} disabled={explanationLoading} className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-100 disabled:opacity-60">{explanationLoading ? 'Generating map…' : 'Generate Grad-CAM'}</button>
+                  {explanationError && <p className="mt-3 text-sm text-rose-700" role="alert">{explanationError}</p>}
+                  {explanationUrl && <div className="mt-4 space-y-3"><img id="gradcam-image" src={explanationUrl} alt="Qualitative Grad-CAM overlay" className="w-full rounded-lg border border-slate-200" />{explanationMeta && <details className="text-xs text-slate-500"><summary className="cursor-pointer font-semibold text-slate-700">Explanation provenance</summary><code className="mt-2 block break-all rounded-lg bg-slate-50 p-3">{explanationMeta}</code></details>}</div>}
+                </section>
               )}
+              <div className="flex gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /><div><strong className="block">Research record saved locally</strong><span>Scores and provenance were stored; source image bytes were not retained.</span></div></div>
+            </div>
+          ) : <ModelFlowPrimer />}
 
-              {/* Success badge */}
-              <div className="flex items-center space-x-2.5 bg-emerald-50 border border-emerald-100/50 text-emerald-800 p-3.5 rounded-xl text-xs">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-                <div>
-                  <span className="font-bold block">Research Record Saved</span>
-                  <span>Scores and provenance were saved. The input image was not retained unless explicitly configured.</span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div
-              className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-10 text-center h-full min-h-[400px] flex flex-col justify-center items-center space-y-4"
-              id="empty-result-placeholder"
-            >
-              <div className="p-4 bg-white border border-slate-200 text-slate-400 rounded-2xl shadow-sm">
-                <FileText className="h-8 w-8" />
-              </div>
-              <div className="max-w-xs">
-                <h3 className="font-sans font-bold text-slate-700 text-sm">Output Panel</h3>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  Upload a liver ultrasound frame and fill in research-case details to run the selected model cascade.
-                </p>
-              </div>
-            </div>
-          )}
+          {!scanResult && <div className="flex gap-3 rounded-lg border border-slate-200 bg-white/70 p-4 text-sm text-slate-600"><FileSearch className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" /><p>The result view will preserve the distinction between gate scores, conditional grade scores, and supplementary derived joint scores.</p></div>}
         </div>
       </div>
     </div>

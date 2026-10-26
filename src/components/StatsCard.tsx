@@ -16,22 +16,22 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   colorClass = 'bg-blue-50 text-blue-600' 
 }) => {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex items-center justify-between" id={`stats-card-${title.toLowerCase().replace(/\s+/g, '-')}`}>
-      <div className="space-y-1.5">
-        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
+    <div className="surface-panel flex items-start justify-between rounded-xl p-5" id={`stats-card-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+      <div>
+        <span className="block text-sm font-medium text-slate-600">
           {title}
         </span>
-        <span className="text-3xl font-bold text-slate-800 block tracking-tight">
+        <span className="mt-2 block text-3xl font-semibold tracking-tight text-ink-950 tabular-nums">
           {value}
         </span>
         {description && (
-          <span className="text-xs text-slate-500 block">
+          <span className="mt-1 block text-xs text-slate-500">
             {description}
           </span>
         )}
       </div>
 
-      <div className={`p-3.5 rounded-xl ${colorClass}`}>
+      <div className={`rounded-lg p-2.5 ${colorClass}`}>
         {icon}
       </div>
     </div>

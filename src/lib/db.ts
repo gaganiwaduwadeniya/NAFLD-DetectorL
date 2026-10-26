@@ -48,47 +48,7 @@ const initLocalDb = () => {
           createdAt: new Date().toISOString()
         }
       ],
-      scans: [
-        {
-          id: 'scan-1',
-          patientName: 'John Doe',
-          patientAge: 45,
-          patientGender: 'Male',
-          doctorId: 'doctor-1',
-          doctorName: 'Dr. Jane Smith',
-          imageUrl: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=60',
-          prediction: 'Abnormal',
-          confidence: 87.5,
-          probabilities: { Normal: 12.5, Abnormal: 87.5 },
-          timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days ago
-        },
-        {
-          id: 'scan-2',
-          patientName: 'Alice Johnson',
-          patientAge: 32,
-          patientGender: 'Female',
-          doctorId: 'doctor-1',
-          doctorName: 'Dr. Jane Smith',
-          imageUrl: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=60',
-          prediction: 'Normal',
-          confidence: 94.2,
-          probabilities: { Normal: 94.2, Abnormal: 5.8 },
-          timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() // 1 day ago
-        },
-        {
-          id: 'scan-3',
-          patientName: 'Robert Lee',
-          patientAge: 61,
-          patientGender: 'Male',
-          doctorId: 'doctor-1',
-          doctorName: 'Dr. Jane Smith',
-          imageUrl: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=60',
-          prediction: 'Abnormal',
-          confidence: 76.1,
-          probabilities: { Normal: 23.9, Abnormal: 76.1 },
-          timestamp: new Date().toISOString()
-        }
-      ]
+      scans: []
     };
     fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), 'utf-8');
   }

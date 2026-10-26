@@ -1,100 +1,128 @@
 import React from 'react';
-import { Beaker, Cpu, Hash, Layers, ShieldAlert } from 'lucide-react';
+import { ArrowDown, Check, ChevronDown, Cpu, GitBranch, Hash, Info, ShieldAlert } from 'lucide-react';
 import { Scan } from '../types';
 
 const pct = (value: number | undefined) => value === undefined ? 'Unavailable' : `${(value * 100).toFixed(1)}%`;
 
-const scoreRows = (
-  scores: Record<string, number> | undefined,
-  labels: Record<string, string>,
-  color: string,
-) => scores ? Object.entries(scores).map(([key, value]) => (
-  <div key={key} className="space-y-1">
-    <div className="flex justify-between text-xs">
-      <span className="font-medium text-slate-600">{labels[key]}</span>
-      <span className="font-mono font-bold text-slate-700">{pct(value)}</span>
+const stageTheme: Record<number, { badge: string; bar: string; panel: string; label: string }> = {
+  0: { badge: 'bg-emerald-100 text-emerald-800', bar: 'bg-emerald-500', panel: 'border-emerald-200 bg-emerald-50', label: 'Non-NAFLD' },
+  1: { badge: 'bg-amber-100 text-amber-900', bar: 'bg-amber-500', panel: 'border-amber-200 bg-amber-50', label: 'Mild' },
+  2: { badge: 'bg-orange-100 text-orange-900', bar: 'bg-orange-500', panel: 'border-orange-200 bg-orange-50', label: 'Moderate' },
+  3: { badge: 'bg-rose-100 text-rose-900', bar: 'bg-rose-600', panel: 'border-rose-200 bg-rose-50', label: 'Severe' },
+};
+
+const ScoreBar: React.FC<{ label: string; value: number | undefined; color: string; emphasized?: boolean }> = ({ label, value, color, emphasized }) => (
+  <div>
+    <div className="mb-1.5 flex items-baseline justify-between gap-4 text-sm">
+      <span className={emphasized ? 'font-semibold text-slate-900' : 'font-medium text-slate-600'}>{label}</span>
+      <span className="font-mono text-sm font-semibold tabular-nums text-slate-800">{pct(value)}</span>
     </div>
-    <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-      <div className={`h-full rounded-full ${color}`} style={{ width: `${value * 100}%` }} />
+    <div className="h-2.5 overflow-hidden rounded-full bg-slate-100" role="img" aria-label={`${label}: ${pct(value)}`}>
+      <div className={`h-full rounded-full ${color}`} style={{ width: `${Math.max(0, Math.min(1, value ?? 0)) * 100}%` }} />
     </div>
   </div>
-)) : null;
+);
 
 export const ResearchV1Card: React.FC<{ scan: Scan }> = ({ scan }) => {
-  const positive = (scan.finalStage ?? 0) > 0;
-  const stageLabels = { '1': 'Stage 1 Mild', '2': 'Stage 2 Moderate', '3': 'Stage 3 Severe' };
-  const jointLabels = { '0': 'Stage 0 (derived)', '1': 'Stage 1 (derived)', '2': 'Stage 2 (derived)', '3': 'Stage 3 (derived)' };
+  const finalStage = scan.finalStage ?? 0;
+  const theme = stageTheme[finalStage];
+  const gatePositive = finalStage > 0;
+  const conditional = scan.conditionalStageScores;
+  const stageLabels: Record<string, string> = { '1': 'Mild', '2': 'Moderate', '3': 'Severe' };
+  const stageColors: Record<string, string> = { '1': 'bg-amber-500', '2': 'bg-orange-500', '3': 'bg-rose-600' };
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" id={`result-card-${scan.id}`}>
-      <div className={`border-b px-6 py-5 ${positive ? 'border-amber-100 bg-amber-50/70' : 'border-emerald-100 bg-emerald-50/70'}`}>
-        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">PyTorch research cascade output</span>
-        <h2 className="mt-1 text-lg font-extrabold text-slate-900" id="final-stage-label">{scan.finalStageLabel}</h2>
-        <p className="mt-1 text-xs text-slate-600">Model output only; not a diagnosis or clinical recommendation.</p>
-      </div>
+    <article className="surface-panel overflow-hidden rounded-xl" id={`result-card-${scan.id}`}>
+      <header className={`border-b p-5 sm:p-6 ${theme.panel}`}>
+        <div className="flex items-start justify-between gap-5">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-600">Research classification</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink-950" id="final-stage-label">{scan.finalStageLabel}</h2>
+            <p className="mt-1 text-sm text-slate-600">Final cascade output for this single frame</p>
+          </div>
+          <span className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${theme.badge}`}>Stage {finalStage}</span>
+        </div>
+      </header>
 
-      <div className="space-y-5 p-6">
-        <section className="rounded-xl border border-slate-200 bg-slate-50 p-4" aria-label="case summary">
-          <div className="grid grid-cols-3 gap-3 text-xs">
-            <div><span className="block text-[10px] font-semibold uppercase text-slate-400">Case</span><span className="font-semibold text-slate-800">{scan.patientName}</span></div>
-            <div><span className="block text-[10px] font-semibold uppercase text-slate-400">Age / sex</span><span className="font-semibold text-slate-800">{scan.patientAge} / {scan.patientGender}</span></div>
-            <div><span className="block text-[10px] font-semibold uppercase text-slate-400">Input</span><span className="font-mono text-slate-600">single frame</span></div>
+      <div className="space-y-6 p-5 sm:p-6">
+        <dl className="grid grid-cols-3 gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
+          <div className="min-w-0"><dt className="text-xs text-slate-500">Case alias</dt><dd className="mt-1 truncate font-semibold text-slate-900">{scan.patientName}</dd></div>
+          <div><dt className="text-xs text-slate-500">Age / sex</dt><dd className="mt-1 font-semibold text-slate-900">{scan.patientAge} / {scan.patientGender}</dd></div>
+          <div><dt className="text-xs text-slate-500">Input</dt><dd className="mt-1 font-semibold text-slate-900">Single frame</dd></div>
+        </dl>
+
+        <section aria-labelledby="gate-title">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex gap-3">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-ink-950 text-xs font-bold text-white">1</span>
+              <div><h3 id="gate-title" className="text-sm font-semibold text-slate-900">NAFLD gate</h3><p className="mt-0.5 text-xs text-slate-500">DenseNet121 · mean of 5 selected fold members</p></div>
+            </div>
+            <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs text-slate-600">threshold {(scan.binaryThreshold ?? 0.5).toFixed(1)}</span>
+          </div>
+          <div className="mt-4 space-y-4">
+            <ScoreBar label="Non-NAFLD score" value={scan.binaryScoreNonNafld} color="bg-emerald-500" emphasized={!gatePositive} />
+            <ScoreBar label="NAFLD score" value={scan.binaryScoreNafld} color="bg-brand-600" emphasized={gatePositive} />
+          </div>
+          <div className={`mt-4 flex gap-3 rounded-lg border p-3.5 text-sm ${gatePositive ? 'border-brand-200 bg-brand-50 text-brand-900' : 'border-emerald-200 bg-emerald-50 text-emerald-900'}`}>
+            <GitBranch className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <p><strong>Gate decision:</strong> {gatePositive ? `NAFLD score ${pct(scan.binaryScoreNafld)} met the locked threshold, so grading was run.` : `NAFLD score ${pct(scan.binaryScoreNafld)} was below the locked threshold, so grading was not run.`}</p>
           </div>
         </section>
 
-        <section className="space-y-3" aria-label="binary model scores">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">DenseNet121 binary ensemble</h3>
-            <span className="font-mono text-[10px] text-slate-500">NAFLD gate = {scan.binaryThreshold?.toFixed(1)}</span>
+        <div className="flex justify-center text-slate-300" aria-hidden="true"><ArrowDown className="h-5 w-5" /></div>
+
+        <section aria-labelledby="grade-title" className={`rounded-xl border p-4 sm:p-5 ${gatePositive ? 'border-slate-200 bg-white' : 'border-slate-200 bg-slate-50'}`}>
+          <div className="flex gap-3">
+            <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-xs font-bold ${gatePositive ? 'bg-brand-700 text-white' : 'bg-slate-200 text-slate-500'}`}>2</span>
+            <div><h3 id="grade-title" className="text-sm font-semibold text-slate-900">Conditional steatosis grade</h3><p className="mt-0.5 text-xs text-slate-500">EfficientNet-B0 · mean of 5 selected fold members</p></div>
           </div>
-          {scoreRows({ normal: scan.binaryScoreNonNafld ?? 0, nafld: scan.binaryScoreNafld ?? 0 }, { normal: 'Non-NAFLD', nafld: 'NAFLD' }, 'bg-blue-600')}
-          <p className="text-[11px] leading-relaxed text-slate-500">
-            EfficientNet-B0 grading was {scan.gradingPerformed ? 'performed because the NAFLD score met the locked 0.5 gate.' : 'skipped because the NAFLD score was below the locked 0.5 gate.'}
-          </p>
+
+          {scan.gradingPerformed && conditional ? (
+            <div className="mt-5 space-y-4">
+              {Object.entries(conditional).map(([key, value]) => <ScoreBar key={key} label={stageLabels[key]} value={value} color={stageColors[key]} emphasized={Number(key) === finalStage} />)}
+              <p className="flex gap-2 text-xs leading-5 text-slate-500"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />These three scores are conditional on the gate selecting NAFLD and sum to approximately 100% within that branch.</p>
+            </div>
+          ) : (
+            <div className="mt-4 flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600"><Check className="h-4 w-4 shrink-0 text-emerald-600" /><span>Correctly skipped because the NAFLD gate was negative.</span></div>
+          )}
         </section>
 
-        {scan.gradingPerformed && scan.conditionalStageScores && (
-          <section className="space-y-3 rounded-xl border border-violet-200 bg-violet-50/40 p-4" aria-label="conditional staging scores">
-            <div className="flex items-center gap-2"><Layers className="h-4 w-4 text-violet-600" /><h3 className="text-xs font-bold uppercase tracking-wider text-violet-900">EfficientNet-B0 conditional stage scores</h3></div>
-            {scoreRows(scan.conditionalStageScores, stageLabels, 'bg-violet-600')}
-            <p className="text-[11px] text-violet-800">These scores are conditional on the binary gate selecting NAFLD.</p>
-          </section>
-        )}
-
-        <details className="rounded-xl border border-slate-200 bg-white p-4" id="provenance-details">
-          <summary className="cursor-pointer text-xs font-bold uppercase tracking-wider text-slate-700">Provenance and derived values</summary>
-          <div className="mt-4 space-y-4 text-xs text-slate-600">
+        <details className="group rounded-lg border border-slate-200" id="provenance-details">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 text-sm font-semibold text-slate-800">
+            Technical provenance and supplementary values
+            <ChevronDown className="h-4 w-4 transition group-open:rotate-180" aria-hidden="true" />
+          </summary>
+          <div className="space-y-5 border-t border-slate-200 px-4 py-4 text-sm text-slate-600">
             {scan.jointStageScores && (
-              <div className="space-y-2">
-                <p className="font-semibold text-slate-700">Derived joint scores (supplementary; not independently calibrated)</p>
-                {scoreRows(scan.jointStageScores, jointLabels, 'bg-slate-500')}
-              </div>
+              <section>
+                <h4 className="font-semibold text-slate-800">Derived joint scores</h4>
+                <p className="mt-1 text-xs leading-5 text-slate-500">Supplementary cascade products; not independently calibrated clinical probabilities.</p>
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {Object.entries(scan.jointStageScores).map(([key, value]) => <div key={key} className="rounded-lg bg-slate-50 p-3"><span className="block text-xs text-slate-500">Stage {key}</span><strong className="mt-1 block font-mono text-sm text-slate-800">{pct(value)}</strong></div>)}
+                </div>
+              </section>
             )}
-            <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <div><dt className="text-[10px] uppercase text-slate-400">Model version</dt><dd className="font-mono">{scan.modelVersion}</dd></div>
-              <div><dt className="text-[10px] uppercase text-slate-400">Contract</dt><dd className="font-mono break-all">{scan.contractId}</dd></div>
-              <div><dt className="text-[10px] uppercase text-slate-400">Binary architecture</dt><dd className="font-mono">{scan.binaryArchitecture} (5 members)</dd></div>
-              <div><dt className="text-[10px] uppercase text-slate-400">Staging architecture</dt><dd className="font-mono">{scan.stagingArchitecture} (5 members)</dd></div>
-              <div><dt className="text-[10px] uppercase text-slate-400">Service latency</dt><dd className="font-mono">{scan.serviceInferenceMs?.toFixed(1)} ms</dd></div>
-              <div><dt className="text-[10px] uppercase text-slate-400">Image retained</dt><dd className="font-mono">{scan.imageStored ? 'yes' : 'no'}</dd></div>
+            <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+              <div><dt className="text-xs text-slate-500">Model version</dt><dd className="mt-0.5 break-all font-mono text-xs text-slate-800">{scan.modelVersion}</dd></div>
+              <div><dt className="text-xs text-slate-500">Contract</dt><dd className="mt-0.5 break-all font-mono text-xs text-slate-800">{scan.contractId}</dd></div>
+              <div><dt className="text-xs text-slate-500">Binary architecture</dt><dd className="mt-0.5 text-slate-800">DenseNet121 × 5</dd></div>
+              <div><dt className="text-xs text-slate-500">Staging architecture</dt><dd className="mt-0.5 text-slate-800">EfficientNet-B0 × 5</dd></div>
+              <div><dt className="text-xs text-slate-500">Service inference</dt><dd className="mt-0.5 font-mono text-xs text-slate-800">{scan.serviceInferenceMs?.toFixed(1) ?? '—'} ms</dd></div>
+              <div><dt className="text-xs text-slate-500">Source image retained</dt><dd className="mt-0.5 text-slate-800">{scan.imageStored ? 'Yes' : 'No'}</dd></div>
             </dl>
-            <div className="space-y-1 border-t border-slate-100 pt-3 font-mono text-[10px] break-all">
-              <p className="flex gap-1"><Hash className="h-3 w-3 shrink-0" /> Binary manifest: {scan.binaryManifestSha256}</p>
-              <p className="flex gap-1"><Hash className="h-3 w-3 shrink-0" /> Staging manifest: {scan.stagingManifestSha256}</p>
+            <div className="space-y-2 border-t border-slate-200 pt-4 font-mono text-[11px] text-slate-500">
+              <p className="flex gap-2 break-all"><Hash className="mt-0.5 h-3 w-3 shrink-0" />{scan.binaryManifestSha256}</p>
+              <p className="flex gap-2 break-all"><Hash className="mt-0.5 h-3 w-3 shrink-0" />{scan.stagingManifestSha256}</p>
             </div>
           </div>
         </details>
 
-        <div className="flex items-start gap-3 rounded-xl border border-violet-200 bg-violet-50 p-4 text-xs text-violet-900" id="research-only-notice">
-          <Beaker className="mt-0.5 h-4 w-4 shrink-0" />
-          <p><strong>Research use only.</strong> This internally evaluated model is not clinically validated. Scores are not calibrated clinical probabilities and require qualified human interpretation.</p>
+        <div id="research-only-notice" className="flex gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-5 text-amber-950">
+          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <p><strong>Research use only.</strong> This internally evaluated model is not clinically validated. Do not use this output for autonomous diagnosis or treatment.</p>
         </div>
-        <div className="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50 p-4 text-xs text-blue-900">
-          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>One uploaded frame may not represent a complete ultrasound examination. Do not use this output for autonomous diagnosis or treatment.</p>
-        </div>
-        <div className="flex items-center gap-2 text-[10px] text-slate-400"><Cpu className="h-3 w-3" /> Exact five-member DenseNet121 and five-member EfficientNet-B0 ensembles</div>
+        <p className="flex items-center gap-2 text-xs text-slate-500"><Cpu className="h-3.5 w-3.5" />Exact selected PyTorch research-v1 ensemble</p>
       </div>
-    </div>
+    </article>
   );
 };
