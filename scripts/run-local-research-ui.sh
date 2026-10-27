@@ -11,6 +11,7 @@ DATA_DIR="${LOCAL_DATA_DIR:-${STATE_DIR}/data}"
 PYTHON_BIN="${PY_RUNTIME_DIR}/bin/python"
 REQUIREMENTS_FILE="${ROOT_DIR}/pytorch_service/requirements.lock.txt"
 REQUIREMENTS_STAMP="${PY_RUNTIME_DIR}/.requirements.sha256"
+RESEARCH_ROOT="${ROOT_DIR}/pytorch_service/research_v1"
 MODEL_PORT="${ML_SERVICE_PORT:-5002}"
 APP_PORT="${PORT:-3001}"
 MODEL_URL="http://127.0.0.1:${MODEL_PORT}"
@@ -34,7 +35,6 @@ Options:
   --help          Show this help.
 
 Optional environment variables:
-  NAFLD_RESEARCH_ROOT  Path to the separate "NAFLD New" research workspace.
   LOCAL_DATA_DIR       Local JSON database directory.
   PORT                 UI/API port (default: 3001).
   ML_SERVICE_PORT      Model-service port (default: 5002).
@@ -66,25 +66,6 @@ command_exists() {
 
 require_command() {
   command_exists "$1" || fail "Required command '$1' is unavailable. See RUN_NEW_UI.md."
-}
-
-resolve_research_root() {
-  if [[ -n "${NAFLD_RESEARCH_ROOT:-}" ]]; then
-    printf '%s\n' "${NAFLD_RESEARCH_ROOT}"
-    return
-  fi
-
-  local candidate
-  for candidate in \
-    "${ROOT_DIR}/../NAFLD New" \
-    "/mnt/g/NAFLD New"; do
-    if [[ -d "${candidate}" ]]; then
-      printf '%s\n' "${candidate}"
-      return
-    fi
-  done
-
-  fail "The separate 'NAFLD New' workspace was not found. Set NAFLD_RESEARCH_ROOT to its path."
 }
 
 verify_model_bundle() {
@@ -263,9 +244,7 @@ main() {
   require_command sha256sum
   require_command find
 
-  local research_root
-  research_root="$(resolve_research_root)"
-  verify_model_bundle "${research_root}"
+  verify_model_bundle "${RESEARCH_ROOT}"
   log "Verified the selected 5 + 5 checkpoint bundle."
 
   prepare_python_runtime
@@ -300,7 +279,6 @@ main() {
 
   log "Starting the verified model service; first load can take about one minute..."
   PYTHONPATH="${ROOT_DIR}" \
-  NAFLD_RESEARCH_ROOT="${research_root}" \
   "${PYTHON_BIN}" -m uvicorn pytorch_service.app:app \
     --host 127.0.0.1 \
     --port "${MODEL_PORT}" \

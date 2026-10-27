@@ -5,7 +5,6 @@ from __future__ import annotations
 from io import BytesIO
 import hashlib
 import json
-import os
 from pathlib import Path
 import sys
 import time
@@ -52,8 +51,7 @@ class ResearchRuntime:
         self.rss_bytes = None
 
     def _root(self) -> Path:
-        configured = os.environ.get("NAFLD_RESEARCH_ROOT", "/mnt/g/NAFLD New")
-        return Path(configured).resolve()
+        return (Path(__file__).resolve().parent / "research_v1").resolve()
 
     def _verify_environment(self) -> dict:
         import timm
@@ -75,7 +73,7 @@ class ResearchRuntime:
         root = self._root()
         source_root = root / "src"
         if not source_root.is_dir():
-            raise RuntimeError("Authoritative research source directory is unavailable")
+            raise RuntimeError("Repository-local research inference source is unavailable")
         if str(source_root) not in sys.path:
             sys.path.insert(0, str(source_root))
         versions = self._verify_environment()

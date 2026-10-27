@@ -1,0 +1,54 @@
+{
+  "base_weights": null,
+  "candidate_id": "d3bcbe6ee2da3c0cc405489584f67f9adf7573799f7f9391beb871a8d100c63a",
+  "code_version": "560cc4ae55b4d3eec512f04aba8a0f8870ef7f67df2191afc136038535d42a28",
+  "dataset_version": "48b42abbee97b892591054019cdb4f84a65af9e0cd88d09fcbf8b3ae2a8b9856",
+  "ensemble": "mean_class_probability",
+  "final_model": false,
+  "labels": [
+    "Non-NAFLD",
+    "NAFLD"
+  ],
+  "model_registry": {
+    "file": "models.yaml",
+    "sha256": "21270f31c99ceca4e63dd295080d3a033d6c4140ca15218b528789546b02e3f4"
+  },
+  "model_version": "nafld-research-v1",
+  "models": [
+    {
+      "experiment_id": "25735ed1f004eaa69b3c4f8be8586dd7d7c0c80852ac25ceea436689cd5553b0",
+      "file": "fold-0-25735ed1f004.pt",
+      "fold": 0,
+      "sha256": "8b56ce7ccfa0978d09fc37a9261682067f9fb6b9e2d95439fc7d76c715b45e60"
+    },
+    {
+      "experiment_id": "86606eae87b0ff65186a1de8176fd8e1a7a11014cde25c06a1bf95596c30f78f",
+      "file": "fold-1-86606eae87b0.pt",
+      "fold": 1,
+      "sha256": "c386a397a41fc58e38e86317d23a6b9cfe7103f2616eff0083eb5bfb0eadd63a"
+    },
+    {
+      "experiment_id": "379598fb7f3a3f6c784f2ace31c8fcfc008bf21722d4ab29f7a2be5568bc77e6",
+      "file": "fold-2-379598fb7f3a.pt",
+      "fold": 2,
+      "sha256": "bb9add144171ad73f353eb79b67d7d4441af3bd8eae529078b8c83d2f5ab7c38"
+    },
+    {
+      "experiment_id": "bf2b3e06be73fd8267fff2745df38f5a8d9ee81cad9842e27c63847105b41638",
+      "file": "fold-3-bf2b3e06be73.pt",
+      "fold": 3,
+      "sha256": "7f59619ff4631424f454b99595612b55ab98b611c4259451ba02297905237723"
+    },
+    {
+      "experiment_id": "ead4a5da9cfd4e6e18d799fe426a880707eb2cf7e99a1bdbb0a4f42c3bf3f52f",
+      "file": "fold-4-ead4a5da9cfd.pt",
+      "fold": 4,
+      "sha256": "512003d57b0543e84a164392df9e7a5c26a7378a33165c2db5d8997272d026cc"
+    }
+  ],
+  "note": "Research prototype; no independent clinical validation. Export does not select a final architecture.",
+  "schema_version": 1,
+  "selection_status": "development_fold_ensemble_not_final",
+  "task": "binary",
+  "trained": true
+}

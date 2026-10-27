@@ -1,8 +1,10 @@
 from io import BytesIO
+from pathlib import Path
 
 from PIL import Image
 
 from pytorch_service.contract import build_response, validate_image_bytes
+from pytorch_service.runtime import ResearchRuntime
 
 
 class StubTask:
@@ -19,6 +21,17 @@ def image_bytes():
     buf = BytesIO()
     Image.new('RGB', (32, 24), (20, 40, 60)).save(buf, format='PNG')
     return buf.getvalue()
+
+
+def test_runtime_bundle_is_repository_local_and_complete(monkeypatch):
+    monkeypatch.delenv('NAFLD_RESEARCH_ROOT', raising=False)
+    root = ResearchRuntime()._root()
+    repository = Path(__file__).resolve().parents[2]
+
+    assert root == repository / 'pytorch_service' / 'research_v1'
+    assert (root / 'src' / 'nafld' / 'inference' / 'pipeline.py').is_file()
+    assert len(list((root / 'checkpoints' / 'research-v1' / 'binary').glob('fold-*.pt'))) == 5
+    assert len(list((root / 'checkpoints' / 'research-v1' / 'staging').glob('fold-*.pt'))) == 5
 
 
 def test_gate_below_threshold_skips_staging():

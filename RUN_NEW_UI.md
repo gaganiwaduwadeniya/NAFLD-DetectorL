@@ -24,46 +24,69 @@ These ten selected fold checkpoints are the verified research release. They
 are not ten epoch snapshots, and the service fails closed if the manifests,
 runtime versions, checkpoint count, or dataset identity do not match.
 
-## Required folders
+## Required folder
 
-Run the commands in WSL. The following paths must remain available:
-
-```text
-/mnt/g/nafld-detectorl   # application repository
-/mnt/g/NAFLD New        # selected research source and checkpoints
-```
-
-The prepared local environments should also exist:
+The application is self-contained inside this repository. The launcher
+supports both native Windows and WSL/Linux:
 
 ```text
-/mnt/g/nafld-detectorl/node_modules
-/mnt/g/nafld-detectorl/.runtime/pytorch-research-v1/bin/python
+<parent>/nafld-detectorl
 ```
 
-Quick check:
+Examples:
 
-```bash
-cd /mnt/g/nafld-detectorl
-test -x .runtime/pytorch-research-v1/bin/python && echo "PyTorch runtime OK"
-test -d '/mnt/g/NAFLD New/checkpoints/research-v1' && echo "Models OK"
-test -d node_modules && echo "Node modules OK"
+```text
+Windows: G:\nafld-detectorl
+WSL:     /mnt/g/nafld-detectorl
 ```
 
-Do not copy the model checkpoints into this application repository or commit
-them to Git.
+The exact inference source, manifests and selected model bundle live under
+`pytorch_service/research_v1/`. No second workspace or environment variable is
+required at runtime.
 
-## One-command start (recommended)
+## Prerequisites
 
-From a WSL terminal opened in this repository, run:
+### Native Windows (WSL is not required)
+
+Install these once, then reopen PowerShell:
+
+- Node.js 20 or newer, including `npm`: <https://nodejs.org/>
+- `uv`: <https://docs.astral.sh/uv/getting-started/installation/>
+- a complete checkout of this application repository, including its Git LFS
+  model objects
+
+Check the two commands in ordinary Windows PowerShell:
+
+```powershell
+node --version
+uv --version
+```
+
+### WSL/Linux
+
+- Node.js 20 or newer, including `npm`
+- `uv`, `curl`, and standard Linux utilities
+- a complete checkout of this application repository, including its Git LFS
+  model objects
+
+The Python virtual environment and Node packages do not need to exist yet.
+The launcher creates or repairs them under this repository.
+
+## One-command start (recommended on Windows and WSL)
+
+Open PowerShell, Command Prompt, or a WSL terminal in the application
+repository and run:
 
 ```bash
 npm run app
 ```
 
+The npm entry point detects the operating system. It uses native PowerShell on
+Windows and Bash on WSL/Linux. It does not invoke or require WSL on Windows.
+
 That single command:
 
-1. locates and verifies the separate `NAFLD New` workspace and all ten selected
-   fold checkpoints;
+1. locates and verifies the repository-local ten selected fold checkpoints;
 2. creates or updates `.runtime/pytorch-research-v1` with Python 3.12 and the
    exact locked inference packages;
 3. checks or installs the locked Node dependencies;
@@ -75,21 +98,7 @@ That single command:
 
 The first run requires internet access to install missing dependencies and can
 take several minutes. Later runs reuse the verified environment. The model
-files are still read from the separate research workspace and are never copied
-into this repository.
-
-Prerequisites on another computer:
-
-- WSL2 with a Linux distribution;
-- Node.js 20 or newer, including `npm`;
-- `uv`, `curl`, and standard Linux utilities;
-- this application workspace and the separate `NAFLD New` workspace.
-
-If the research workspace is not beside this repository, provide its path:
-
-```bash
-NAFLD_RESEARCH_ROOT='/path/to/NAFLD New' npm run app
-```
+service reads only the bundle inside this repository.
 
 Useful launcher modes:
 
@@ -102,14 +111,20 @@ npm run app -- --no-open       # run without opening a browser automatically
 Runtime logs and the fresh local database are kept under
 `.runtime/nafld-local/`, which is ignored by Git.
 
-## Manual two-terminal start
+On native Windows, the managed Python executable is
+`.runtime\pytorch-research-v1-windows\Scripts\python.exe`. On WSL/Linux it is
+`.runtime/pytorch-research-v1/bin/python`. These environments are intentionally
+platform-specific and must not be copied from one operating system to another.
+
+## Manual two-terminal start (WSL/Linux troubleshooting)
 
 Use the commands below only when troubleshooting or developing the two services
 independently.
 
 ## Start the application
 
-Open two WSL terminals.
+Open two WSL/Linux terminals. Native Windows users should normally use the
+one-command launcher above.
 
 ### Terminal 1: PyTorch inference service
 
@@ -117,7 +132,6 @@ Open two WSL terminals.
 cd /mnt/g/nafld-detectorl
 
 PYTHONPATH=. \
-NAFLD_RESEARCH_ROOT='/mnt/g/NAFLD New' \
 .runtime/pytorch-research-v1/bin/python -m uvicorn pytorch_service.app:app \
   --host 127.0.0.1 \
   --port 5002
@@ -233,8 +247,9 @@ and no automatic TensorFlow fallback.
   scan history.
 - `USE_LOCAL_DB=true` prevents the repository's bundled Firebase configuration
   from being used during the local demonstration.
-- Prediction metadata and user-entered patient fields are written to the local
-  database at `data/db.json` unless `LOCAL_DATA_DIR` is set.
+- With the one-command launcher, prediction metadata and user-entered patient
+  fields are written to `.runtime/nafld-local/data/db.json` unless
+  `LOCAL_DATA_DIR` is set.
 - For disposable manual testing, isolate all history in a temporary folder:
 
   ```bash
@@ -280,8 +295,8 @@ PYTHONPATH=. .runtime/pytorch-research-v1/bin/python \
 
 ## Stop the application
 
-Press `Ctrl+C` once in Terminal 2 to stop React/Express, then press `Ctrl+C`
-once in Terminal 1 to stop the PyTorch service.
+When using `npm run app`, press `Ctrl+C` once in its terminal to stop both
+managed processes. Manual two-terminal mode requires stopping each terminal.
 
 Confirm both ports are closed:
 
@@ -296,7 +311,8 @@ curl -sS http://127.0.0.1:5002/health || echo "Model service stopped"
 
 Read the JSON error from `/health` and the Terminal 1 log. Common causes are:
 
-- `/mnt/g/NAFLD New` is unavailable;
+- `pytorch_service/research_v1` is incomplete (for example, Git LFS objects
+  were not downloaded);
 - a checkpoint or manifest hash differs;
 - the exact recorded Python package versions are not active;
 - fewer than five binary or five staging members were found.
@@ -317,13 +333,33 @@ Restart Terminal 2 after correcting environment variables.
 
 ### Port already in use
 
-Find the old local process before starting another copy:
+On Windows PowerShell, find the process IDs using the ports:
+
+```powershell
+Get-NetTCPConnection -LocalPort 3001,5002 -ErrorAction SilentlyContinue |
+  Select-Object LocalPort, State, OwningProcess
+```
+
+On WSL/Linux:
 
 ```bash
 ss -ltnp | rg ':3001|:5002'
 ```
 
 Stop only the confirmed old NAFLD process. Do not kill unrelated processes.
+
+### Windows says `uv` is unavailable
+
+Install `uv` using its official Windows instructions, close and reopen
+PowerShell so `PATH` refreshes, verify `uv --version`, and run `npm run app`
+again. Do not copy the WSL `.runtime` environment to Windows; the launcher will
+create the correct native Windows environment.
+
+### Windows PowerShell script execution is restricted
+
+Run through `npm run app`. The platform dispatcher invokes this repository's
+checked-in PowerShell launcher with a process-scoped execution-policy bypass;
+it does not change the computer's persistent PowerShell policy.
 
 ### Prediction times out
 

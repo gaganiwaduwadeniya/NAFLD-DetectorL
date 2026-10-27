@@ -36,6 +36,7 @@
     "training_performed": false,
     "application_deployed": false
   },
-  "restricted_runtime_pointer": "G:\\NAFLD New\\checkpoints\\research-v1",
+  "repository_runtime_root": "pytorch_service/research_v1",
+  "model_binaries_repository_local": true,
   "model_binaries_in_portable_zip": false
 }

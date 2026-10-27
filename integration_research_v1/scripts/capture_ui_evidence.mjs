@@ -14,7 +14,7 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 function launch(command, args, env, bucket) {
   const child = spawn(command, args, { cwd: root, env: { ...process.env, ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
-  for (const stream of [child.stdout, child.stderr]) stream.on('data', chunk => bucket.push(String(chunk).replaceAll(root, '<APP_ROOT>').replaceAll('/mnt/g/NAFLD New', '<MODEL_ROOT>')));
+  for (const stream of [child.stdout, child.stderr]) stream.on('data', chunk => bucket.push(String(chunk).replaceAll(root, '<APP_ROOT>')));
   children.push(child);
   return child;
 }
@@ -118,7 +118,7 @@ await mkdir(screenshotDir, { recursive: true });
 const service = launch(
   path.join(root, '.runtime/pytorch-research-v1/bin/python'),
   ['-m', 'uvicorn', 'pytorch_service.app:app', '--host', '127.0.0.1', '--port', '5003'],
-  { PYTHONPATH: root, NAFLD_RESEARCH_ROOT: '/mnt/g/NAFLD New', PYTHONPYCACHEPREFIX: '/tmp/nafld-ch6-browser-pyc' }, logs.service,
+  { PYTHONPATH: root, PYTHONPYCACHEPREFIX: '/tmp/nafld-ch6-browser-pyc' }, logs.service,
 );
 let cdp;
 try {

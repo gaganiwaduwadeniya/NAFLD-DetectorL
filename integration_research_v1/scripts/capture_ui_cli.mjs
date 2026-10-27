@@ -16,7 +16,7 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 function launch(command, args, env = {}) {
   const child = spawn(command, args, { cwd: root, env: { ...process.env, ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
-  for (const stream of [child.stdout, child.stderr]) stream.on('data', chunk => logs.push(String(chunk).replaceAll(root, '<APP_ROOT>').replaceAll('/mnt/g/NAFLD New', '<MODEL_ROOT>')));
+  for (const stream of [child.stdout, child.stderr]) stream.on('data', chunk => logs.push(String(chunk).replaceAll(root, '<APP_ROOT>')));
   children.push(child);
   return child;
 }
@@ -63,7 +63,7 @@ async function chromeShot(name, url, width = 1440, height = 1000, waitMs = 10000
 await mkdir(evidence, { recursive: true });
 await mkdir(extension, { recursive: true });
 const service = launch(path.join(root, '.runtime/pytorch-research-v1/bin/python'), ['-m', 'uvicorn', 'pytorch_service.app:app', '--host', '127.0.0.1', '--port', '5004'], {
-  PYTHONPATH: root, NAFLD_RESEARCH_ROOT: '/mnt/g/NAFLD New', PYTHONPYCACHEPREFIX: '/tmp/nafld-ch6-cli-pyc',
+  PYTHONPATH: root, PYTHONPYCACHEPREFIX: '/tmp/nafld-ch6-cli-pyc',
 });
 try {
   await waitHttp('http://127.0.0.1:5004/ready', 900000, true);

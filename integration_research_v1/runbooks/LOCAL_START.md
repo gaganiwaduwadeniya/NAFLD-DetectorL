@@ -1,9 +1,26 @@
 # Local start: selected PyTorch research cascade
 
-Run from `/mnt/g/nafld-detectorl` in two terminals. The model files remain in the restricted research workspace and are not copied into this repository.
+The supported start command works from native Windows PowerShell/Command
+Prompt and from WSL/Linux. WSL is not required on Windows:
+
+```text
+npm run app
+```
+
+The platform-neutral npm entry point selects PowerShell on Windows and Bash on
+WSL/Linux. It verifies the restricted model bundle, creates the appropriate
+platform-specific Python 3.12 environment, repairs locked Node dependencies,
+builds both UI and API, starts both services, and opens the dashboard. The
+verified inference code and model bundle are repository-local under
+`pytorch_service/research_v1`; no second workspace is required. Full
+prerequisites and troubleshooting are in `RUN_NEW_UI.md`.
+
+## Manual WSL/Linux troubleshooting
+
+Run from `/mnt/g/nafld-detectorl` in two terminals only when troubleshooting:
 
 ```bash
-PYTHONPATH=. NAFLD_RESEARCH_ROOT='/mnt/g/NAFLD New' \
+PYTHONPATH=. \
   .runtime/pytorch-research-v1/bin/python -m uvicorn pytorch_service.app:app \
   --host 127.0.0.1 --port 5002
 ```

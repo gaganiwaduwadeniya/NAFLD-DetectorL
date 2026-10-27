@@ -1,0 +1,33 @@
+normalization_profiles:
+  imagenet: &imagenet
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+  inception: &inception
+    mean: [0.5, 0.5, 0.5]
+    std: [0.5, 0.5, 0.5]
+backbones:
+  resnet18:
+    features: 512
+    timm: {name: resnet18.a1_in1k, normalization: *imagenet, pretraining_data: ImageNet-1k}
+    torchvision: {name: resnet18, weights: IMAGENET1K_V1, normalization: *imagenet, pretraining_data: ImageNet-1k}
+  densenet121:
+    features: 1024
+    timm: {name: densenet121.ra_in1k, normalization: *imagenet, pretraining_data: ImageNet-1k}
+    torchvision: {name: densenet121, weights: IMAGENET1K_V1, normalization: *imagenet, pretraining_data: ImageNet-1k}
+  efficientnet_b0:
+    features: 1280
+    timm: {name: efficientnet_b0.ra_in1k, normalization: *imagenet, pretraining_data: ImageNet-1k}
+    torchvision: {name: efficientnet_b0, weights: IMAGENET1K_V1, normalization: *imagenet, pretraining_data: ImageNet-1k}
+  efficientnetv2_s:
+    features: 1280
+    timm: {name: tf_efficientnetv2_s.in21k_ft_in1k, normalization: *inception, pretraining_data: ImageNet-21k then ImageNet-1k}
+    torchvision: {name: efficientnet_v2_s, weights: IMAGENET1K_V1, normalization: *imagenet, pretraining_data: ImageNet-1k}
+  convnext_tiny:
+    features: 768
+    timm: {name: convnext_tiny.fb_in1k, normalization: *imagenet, pretraining_data: ImageNet-1k}
+    torchvision: {name: convnext_tiny, weights: IMAGENET1K_V1, normalization: *imagenet, pretraining_data: ImageNet-1k}
+tasks:
+  binary: [Non-NAFLD, NAFLD]
+  staging: [Stage 1, Stage 2, Stage 3]
+  four_class: [Stage 0, Stage 1, Stage 2, Stage 3]
+

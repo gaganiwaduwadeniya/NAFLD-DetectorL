@@ -1,0 +1,88 @@
+{
+  "binary": "binary",
+  "clinically_validated": false,
+  "dataset_version": "48b42abbee97b892591054019cdb4f84a65af9e0cd88d09fcbf8b3ae2a8b9856",
+  "exports": {
+    "binary": {
+      "backbone": "densenet121",
+      "candidate_id": "d3bcbe6ee2da3c0cc405489584f67f9adf7573799f7f9391beb871a8d100c63a",
+      "directory": "checkpoints/research-v1/binary",
+      "manifest_sha256": "daa75075d2de25823a2648dcb061b273e46459513657014cb239b5b8d2975cd9"
+    },
+    "staging": {
+      "backbone": "efficientnet_b0",
+      "candidate_id": "94f36aa209170ad8ae216acf2ba08c68943e194930332fbb923d05b9ca5af49e",
+      "directory": "checkpoints/research-v1/staging",
+      "manifest_sha256": "12a0894534756dd380d08a4bfe9a6fe8086abde1420fd068140e709d3d83a52a"
+    }
+  },
+  "inference_validation": {
+    "actual_images": 4,
+    "all_replay_decisions_agree": true,
+    "artifact_hashes": {
+      "binary-grad-cam.png": "56c73bf65160049094261f93532d96352da487aa4d05eab1540215fbd2ca6c17",
+      "inference-verification.png": "0acb7e6da8b01989f5bc5f0f2b313db99ff8b8d5d59035d4de45d8a74c9c433d",
+      "stage-0-prediction.png": "114cccca225b95b8796ab54f99205307cad299d03861e529297b23c86b618bfc",
+      "stage-1-prediction.png": "eae62904a2274c76beb40f55019325ed6539f842d34840b869b5a08a5ae5021e",
+      "stage-2-prediction.png": "386fe20bad3cfbacb3c0354bb931817d2c4dbbb03324d1dba2fb370b177d2846",
+      "stage-3-prediction.png": "3a27aa7628edbbe8653b1efefec18ae207947ed89e48dadfccf6b10058c156d7",
+      "verification.json": "a05446eef2fe22968ae05420c830d3ad293903a867b6dc8114abe895342ba6df"
+    },
+    "clinical_validation": false,
+    "completed_utc": "2026-10-23T08:11:23.351909+00:00",
+    "correction": "Probability validity, checkpoint provenance and decisions are acceptance gates; cross-device numeric differences are retained descriptively.",
+    "exports": {
+      "binary": {
+        "candidate_id": "d3bcbe6ee2da3c0cc405489584f67f9adf7573799f7f9391beb871a8d100c63a",
+        "sha256": "daa75075d2de25823a2648dcb061b273e46459513657014cb239b5b8d2975cd9"
+      },
+      "staging": {
+        "candidate_id": "94f36aa209170ad8ae216acf2ba08c68943e194930332fbb923d05b9ca5af49e",
+        "sha256": "12a0894534756dd380d08a4bfe9a6fe8086abde1420fd068140e709d3d83a52a"
+      }
+    },
+    "first_attempt": {
+      "kernel_version": 1,
+      "reason": "An arbitrary 0.01 cross-device replay tolerance rejected a valid 0.035 CPU-versus-CUDA-AMP difference.",
+      "status": "failed"
+    },
+    "fold_member_replays": 8,
+    "grad_cam_verified": true,
+    "kaggle": {
+      "fingerprint": "b672023d83fef3723457a5c6e6b89844b313b7b3cfdcb1b7b0b2376f9cda005e",
+      "gpu_enabled": false,
+      "kernel": "bimalawijekoon/nafld-109-research-v1-inference-check",
+      "kernel_version": 2,
+      "private": true,
+      "state": "complete"
+    },
+    "performance_estimate": false,
+    "runtime_versions": {
+      "Pillow": "13.0.0",
+      "numpy": "2.1.3",
+      "timm": "1.0.29",
+      "torch": "2.11.0+cu128",
+      "torchvision": "0.26.0+cu128"
+    },
+    "scope": "matching_runtime_private_cpu_integration",
+    "status": "passed",
+    "training_executed": false
+  },
+  "inference_validation_complete": true,
+  "model_version": "nafld-research-v1",
+  "patient_prediction_policy": "mean image probabilities per task, then binary gate and staging argmax",
+  "probability_calibration_verified": false,
+  "schema_version": 1,
+  "selected_for_research": true,
+  "selection_report": "outputs/selection/research-v1/release.json",
+  "single_image_prediction_policy": "mean fold-member probabilities, then binary gate and staging argmax",
+  "stage_definitions": {
+    "0": "Normal / Non-NAFLD",
+    "1": "Mild steatosis",
+    "2": "Moderate steatosis",
+    "3": "Severe steatosis"
+  },
+  "staging": "staging",
+  "threshold": 0.5,
+  "threshold_policy": "fixed_0.5_not_optimized"
+}

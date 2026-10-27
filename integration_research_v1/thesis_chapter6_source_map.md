@@ -2,8 +2,8 @@
 
 | Topic | Verified source |
 |---|---|
-| Architecture and selected weights | `G:\NAFLD New\checkpoints\research-v1\MODEL_CARD.md`, `system.json`, binary/staging manifests |
-| Preprocessing and inference semantics | `G:\NAFLD New\src\nafld\preprocessing\images.py`, `inference\pipeline.py`, `scripts\predict.py` |
+| Architecture and selected weights | `pytorch_service/research_v1/checkpoints/research-v1/MODEL_CARD.md`, `system.json`, binary/staging manifests |
+| Preprocessing and inference semantics | `pytorch_service/research_v1/src/nafld/preprocessing/images.py`, `inference/pipeline.py` |
 | Service topology and validation | `pytorch_service/`, `src/server/pytorchContract.ts`, `server.ts` |
 | UI behavior | `src/components/ResearchV1Card.tsx`, `src/pages/DoctorDashboard.tsx`, history/detail components |
 | Exact contract | `integration_research_v1/contracts/prediction_response.schema.json` |

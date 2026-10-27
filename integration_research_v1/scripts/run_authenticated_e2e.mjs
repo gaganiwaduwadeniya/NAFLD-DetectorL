@@ -11,7 +11,7 @@ const appLogs = [];
 
 function launch(command, args, env, logs) {
   const child = spawn(command, args, { cwd: root, env: { ...process.env, ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
-  for (const stream of [child.stdout, child.stderr]) stream.on('data', chunk => logs.push(String(chunk).replaceAll(root, '<APP_ROOT>').replaceAll('/mnt/g/NAFLD New', '<MODEL_ROOT>')));
+  for (const stream of [child.stdout, child.stderr]) stream.on('data', chunk => logs.push(String(chunk).replaceAll(root, '<APP_ROOT>')));
   return child;
 }
 
@@ -47,7 +47,7 @@ await mkdir(path.dirname(output), { recursive: true });
 const python = launch(
   path.join(root, '.runtime/pytorch-research-v1/bin/python'),
   ['-m', 'uvicorn', 'pytorch_service.app:app', '--host', '127.0.0.1', '--port', '5002'],
-  { PYTHONPATH: root, NAFLD_RESEARCH_ROOT: '/mnt/g/NAFLD New', PYTHONPYCACHEPREFIX: '/tmp/nafld-ch6-pyc' },
+  { PYTHONPATH: root, PYTHONPYCACHEPREFIX: '/tmp/nafld-ch6-pyc' },
   serviceLogs,
 );
 let app;

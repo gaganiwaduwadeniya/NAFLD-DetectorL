@@ -1,0 +1,55 @@
+{
+  "base_weights": null,
+  "candidate_id": "94f36aa209170ad8ae216acf2ba08c68943e194930332fbb923d05b9ca5af49e",
+  "code_version": "560cc4ae55b4d3eec512f04aba8a0f8870ef7f67df2191afc136038535d42a28",
+  "dataset_version": "48b42abbee97b892591054019cdb4f84a65af9e0cd88d09fcbf8b3ae2a8b9856",
+  "ensemble": "mean_class_probability",
+  "final_model": false,
+  "labels": [
+    "Stage 1",
+    "Stage 2",
+    "Stage 3"
+  ],
+  "model_registry": {
+    "file": "models.yaml",
+    "sha256": "21270f31c99ceca4e63dd295080d3a033d6c4140ca15218b528789546b02e3f4"
+  },
+  "model_version": "nafld-research-v1",
+  "models": [
+    {
+      "experiment_id": "f501a8a2e398c4dd28cb05680804dd24d3c0c53ff2e3a4e5148ad5dabfd1e01e",
+      "file": "fold-0-f501a8a2e398.pt",
+      "fold": 0,
+      "sha256": "6298187bf2390966cbf87f98e2de94d3ffad62c61c5408488d8e300de556fd58"
+    },
+    {
+      "experiment_id": "eb72f882285dc9da78d7ea47ec8f2504fe6f2f887cafa160a76c6baf624d5823",
+      "file": "fold-1-eb72f882285d.pt",
+      "fold": 1,
+      "sha256": "192358eacf21826f5b5fdf6a511d654ad6c795436d6321d44565a1cd7eaadeb5"
+    },
+    {
+      "experiment_id": "3d809b96b886cb98ff99c78b9621f5bcd5d9151c34ab0e8b6905c028966fbb88",
+      "file": "fold-2-3d809b96b886.pt",
+      "fold": 2,
+      "sha256": "ea3d6f5c62a4a8cf2011e22c2fce1d23c850c8d2b5b0f7126fe0a33b7b86deae"
+    },
+    {
+      "experiment_id": "eaced66e8d53cb916f1ed41e0eabfc6c207c885d698f0107ba1b370576add1ae",
+      "file": "fold-3-eaced66e8d53.pt",
+      "fold": 3,
+      "sha256": "e5a7020749bd352b165d21eb6b155e82af2088fbce77bdaa43c43aa6053881a9"
+    },
+    {
+      "experiment_id": "1c6dea20ea0fbb427fc8b7b21823088fd29488cd42943d36be632791d2a9b076",
+      "file": "fold-4-1c6dea20ea0f.pt",
+      "fold": 4,
+      "sha256": "f019ed394906ddc791ffa6463a199a50836bd3376d78fab45382f308066272a6"
+    }
+  ],
+  "note": "Research prototype; no independent clinical validation. Export does not select a final architecture.",
+  "schema_version": 1,
+  "selection_status": "development_fold_ensemble_not_final",
+  "task": "staging",
+  "trained": true
+}
